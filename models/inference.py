@@ -379,7 +379,10 @@ class InferenceEngine:
             return "I'm a custom transformer-based AI model called DieAI. I use advanced neural networks to understand and generate human-like text responses. Is there something specific about AI or transformers you'd like to know?"
         
         if any(word in prompt_lower for word in ['search', 'find', 'look up']):
-            return "I can help you search for information! My search capabilities allow me to find relevant information on the web. What would you like me to search for?"
+            return "I can help you search for information! My search capabilities allow me to find relevant information on the web, and I continuously learn from web content to improve my knowledge. What would you like me to search for?"
+        
+        if any(word in prompt_lower for word in ['learn', 'learning', 'improve', 'update']):
+            return "I'm continuously learning! I learn from our conversations and also automatically gather knowledge from the web on various topics including AI, science, technology, and general knowledge. This helps me provide better and more up-to-date responses."
         
         if any(word in prompt_lower for word in ['api', 'key', 'endpoint']):
             return "I provide API access for developers! You can generate API keys from your dashboard and use them to integrate my capabilities into your applications. Would you like to know more about the API features?"

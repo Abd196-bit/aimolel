@@ -160,6 +160,10 @@ def web_chat():
         # Get response from inference engine
         response = inference_engine.generate_response(message, use_search=use_search)
 
+        # Collect conversation data for learning
+        session_id = session.get('session_id', 'web_session')
+        learning_service.collect_conversation_data(message, response, session_id)
+
         # Log usage
         username = session.get('user_id')
         db_manager.log_usage(username, 'web_chat', len(message.split()), len(response.split()))

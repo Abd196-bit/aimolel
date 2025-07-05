@@ -13,19 +13,19 @@ class DatabaseManager:
         self.db_path = db_path
         self.use_postgres = use_postgres
         self.connection = None
-        
+
         # Initialize PostgreSQL if enabled
         if use_postgres:
             self._init_postgres()
         else:
             self.initialize_database()
-    
+
     def _init_postgres(self):
         """Initialize PostgreSQL connection and tables"""
         try:
             import psycopg2
             from psycopg2.extras import RealDictCursor
-            
+
             # Get PostgreSQL connection from environment
             database_url = os.getenv('DATABASE_URL')
             if database_url:
@@ -44,7 +44,7 @@ class DatabaseManager:
             logger.error(f"PostgreSQL connection failed: {e}, falling back to SQLite")
             self.use_postgres = False
             self.initialize_database()
-    
+
     def _create_postgres_tables(self):
         """Create PostgreSQL tables"""
         with self.pg_conn.cursor() as cursor:
@@ -61,7 +61,7 @@ class DatabaseManager:
                     last_login TIMESTAMP
                 )
             ''')
-            
+
             # API keys table
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS api_keys (
@@ -75,7 +75,7 @@ class DatabaseManager:
                     FOREIGN KEY (username) REFERENCES users (username)
                 )
             ''')
-            
+
             # API interactions table
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS api_interactions (
@@ -90,16 +90,16 @@ class DatabaseManager:
                     FOREIGN KEY (username) REFERENCES users (username)
                 )
             ''')
-            
+
             self.pg_conn.commit()
             logger.info("PostgreSQL tables created successfully")
-        
+
     def initialize_database(self):
         """Initialize database with required tables"""
         try:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
-                
+
                 # Users table
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS users (
@@ -112,7 +112,7 @@ class DatabaseManager:
                         is_active BOOLEAN DEFAULT 1
                     )
                 ''')
-                
+
                 # API keys table
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS api_keys (
@@ -126,7 +126,7 @@ class DatabaseManager:
                         FOREIGN KEY (username) REFERENCES users (username)
                     )
                 ''')
-                
+
                 # API interactions table
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS api_interactions (
@@ -141,7 +141,7 @@ class DatabaseManager:
                         FOREIGN KEY (api_key) REFERENCES api_keys (api_key)
                     )
                 ''')
-                
+
                 # Rate limiting table
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS rate_limits (
@@ -153,7 +153,7 @@ class DatabaseManager:
                         FOREIGN KEY (api_key) REFERENCES api_keys (api_key)
                     )
                 ''')
-                
+
                 # Model training logs table
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS training_logs (
@@ -167,7 +167,7 @@ class DatabaseManager:
                         metadata TEXT
                     )
                 ''')
-                
+
                 # Conversations table
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS conversations (
@@ -180,7 +180,7 @@ class DatabaseManager:
                         metadata TEXT
                     )
                 ''')
-                
+
                 # User feedback table for learning
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS user_feedback (
@@ -195,7 +195,7 @@ class DatabaseManager:
                         FOREIGN KEY (conversation_id) REFERENCES conversations (id)
                     )
                 ''')
-                
+
                 # Learning data table
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS learning_data (
@@ -205,17 +205,18 @@ class DatabaseManager:
                         source TEXT NOT NULL, -- 'feedback', 'correction', 'conversation'
                         quality_score REAL DEFAULT 1.0,
                         timestamp TEXT NOT NULL,
-                        used_for_training BOOLEAN DEFAULT 0
+                        used_for_training BOOLEAN DEFAULT 0,
+                        source_url TEXT
                     )
                 ''')
-                
+
                 conn.commit()
                 logger.info("Database initialized successfully")
-                
+
         except Exception as e:
             logger.error(f"Error initializing database: {e}")
             raise
-    
+
     @contextmanager
     def get_connection(self):
         """Get database connection with context manager"""
@@ -231,7 +232,7 @@ class DatabaseManager:
         finally:
             if conn:
                 conn.close()
-    
+
     def test_connection(self) -> bool:
         """Test database connection"""
         try:
@@ -242,7 +243,7 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Database connection test failed: {e}")
             return False
-    
+
     # User management methods
     def create_user(self, user_data: Dict) -> bool:
         """Create a new user"""
@@ -265,7 +266,7 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Error creating user: {e}")
             return False
-    
+
     def get_user(self, username: str) -> Optional[Dict]:
         """Get user by username"""
         try:
@@ -277,7 +278,7 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Error getting user: {e}")
             return None
-    
+
     def update_user_password(self, username: str, password_hash: str, password_salt: str) -> bool:
         """Update user password"""
         try:
@@ -291,7 +292,7 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Error updating user password: {e}")
             return False
-    
+
     def deactivate_user(self, username: str) -> bool:
         """Deactivate user account"""
         try:
@@ -303,7 +304,7 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Error deactivating user: {e}")
             return False
-    
+
     # API key management methods
     def create_api_key(self, api_key_data: Dict) -> bool:
         """Create a new API key"""
@@ -326,7 +327,7 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Error creating API key: {e}")
             return False
-    
+
     def get_api_key(self, api_key: str) -> Optional[Dict]:
         """Get API key data"""
         try:
@@ -338,7 +339,7 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Error getting API key: {e}")
             return None
-    
+
     def update_api_key_usage(self, api_key: str) -> bool:
         """Update API key usage statistics"""
         try:
@@ -354,7 +355,7 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Error updating API key usage: {e}")
             return False
-    
+
     def revoke_api_key(self, api_key: str) -> bool:
         """Revoke API key"""
         try:
@@ -366,7 +367,7 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Error revoking API key: {e}")
             return False
-    
+
     def get_user_api_keys(self, username: str) -> List[Dict]:
         """Get all API keys for a user"""
         try:
@@ -383,7 +384,7 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Error getting user API keys: {e}")
             return []
-    
+
     def deactivate_user_api_keys(self, username: str) -> bool:
         """Deactivate all API keys for a user"""
         try:
@@ -395,7 +396,7 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Error deactivating user API keys: {e}")
             return False
-    
+
     # API interaction logging methods
     def log_api_interaction(self, api_key: str, endpoint: str, input_data: Dict, 
                            output_data: Dict, timestamp: str, response_time: float = None,
@@ -422,13 +423,13 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Error logging API interaction: {e}")
             return False
-    
+
     def get_api_key_usage_stats(self, api_key: str) -> Dict:
         """Get usage statistics for an API key"""
         try:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
-                
+
                 # Get overall stats
                 cursor.execute('''
                     SELECT COUNT(*) as total_requests, 
@@ -436,9 +437,9 @@ class DatabaseManager:
                     FROM api_interactions 
                     WHERE api_key = ?
                 ''', (api_key,))
-                
+
                 overall_stats = dict(cursor.fetchone())
-                
+
                 # Get endpoint stats
                 cursor.execute('''
                     SELECT endpoint, COUNT(*) as request_count
@@ -447,9 +448,9 @@ class DatabaseManager:
                     GROUP BY endpoint
                     ORDER BY request_count DESC
                 ''', (api_key,))
-                
+
                 endpoint_stats = [dict(row) for row in cursor.fetchall()]
-                
+
                 # Get recent activity
                 cursor.execute('''
                     SELECT endpoint, timestamp
@@ -458,25 +459,25 @@ class DatabaseManager:
                     ORDER BY timestamp DESC
                     LIMIT 10
                 ''', (api_key,))
-                
+
                 recent_activity = [dict(row) for row in cursor.fetchall()]
-                
+
                 return {
                     'overall': overall_stats,
                     'by_endpoint': endpoint_stats,
                     'recent_activity': recent_activity
                 }
-                
+
         except Exception as e:
             logger.error(f"Error getting API key usage stats: {e}")
             return {}
-    
+
     def get_usage_stats(self, username: str) -> Dict:
         """Get usage statistics for a user"""
         try:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
-                
+
                 # Get total requests across all API keys
                 cursor.execute('''
                     SELECT COUNT(*) as total_requests
@@ -484,9 +485,9 @@ class DatabaseManager:
                     JOIN api_keys ak ON ai.api_key = ak.api_key
                     WHERE ak.username = ?
                 ''', (username,))
-                
+
                 total_requests = cursor.fetchone()[0]
-                
+
                 # Get requests by endpoint
                 cursor.execute('''
                     SELECT ai.endpoint, COUNT(*) as request_count
@@ -496,18 +497,18 @@ class DatabaseManager:
                     GROUP BY ai.endpoint
                     ORDER BY request_count DESC
                 ''', (username,))
-                
+
                 endpoint_stats = [dict(row) for row in cursor.fetchall()]
-                
+
                 return {
                     'total_requests': total_requests,
                     'by_endpoint': endpoint_stats
                 }
-                
+
         except Exception as e:
             logger.error(f"Error getting usage stats: {e}")
             return {}
-    
+
     # Training log methods
     def log_training_step(self, model_name: str, epoch: int, train_loss: float,
                          val_loss: float = None, learning_rate: float = None,
@@ -534,7 +535,7 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Error logging training step: {e}")
             return False
-    
+
     def get_training_history(self, model_name: str, limit: int = 100) -> List[Dict]:
         """Get training history for a model"""
         try:
@@ -551,7 +552,7 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Error getting training history: {e}")
             return []
-    
+
     # Conversation logging methods
     def log_conversation(self, session_id: str, user_message: str, ai_response: str,
                         api_key: str = None, metadata: Dict = None) -> bool:
@@ -576,7 +577,7 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Error logging conversation: {e}")
             return False
-    
+
     def get_conversation_history(self, session_id: str, limit: int = 50) -> List[Dict]:
         """Get conversation history"""
         try:
@@ -593,7 +594,7 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Error getting conversation history: {e}")
             return []
-    
+
     # Feedback and learning methods
     def store_feedback(self, conversation_id: int, user_message: str, ai_response: str,
                       feedback_type: str, correction_text: str = None, api_key: str = None) -> bool:
@@ -615,41 +616,42 @@ class DatabaseManager:
                     api_key
                 ))
                 conn.commit()
-                
+
                 # Add to learning data if it's a correction
                 if feedback_type == 'correction' and correction_text:
                     self.add_learning_data(user_message, correction_text, 'correction', 1.5)
                 elif feedback_type == 'thumbs_up':
                     self.add_learning_data(user_message, ai_response, 'feedback', 1.2)
-                
+
                 return True
         except Exception as e:
             logger.error(f"Error storing feedback: {e}")
             return False
-    
-    def add_learning_data(self, input_text: str, target_text: str, source: str, quality_score: float = 1.0) -> bool:
+
+    def add_learning_data(self, input_text: str, target_text: str, source: str, quality_score: float = 1.0, source_url: str = None) -> bool:
         """Add data for future training"""
         try:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute('''
                     INSERT INTO learning_data 
-                    (input_text, target_text, source, quality_score, timestamp, used_for_training)
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    (input_text, target_text, source, quality_score, timestamp, used_for_training, source_url)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
                 ''', (
                     input_text,
                     target_text,
                     source,
                     quality_score,
                     datetime.now().isoformat(),
-                    False
+                    False,
+                    source_url
                 ))
                 conn.commit()
                 return True
         except Exception as e:
             logger.error(f"Error adding learning data: {e}")
             return False
-    
+
     def get_learning_data(self, limit: int = 1000, min_quality: float = 1.0) -> List[Dict]:
         """Get learning data for training"""
         try:
@@ -666,7 +668,7 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Error getting learning data: {e}")
             return []
-    
+
     def mark_data_used_for_training(self, data_ids: List[int]) -> bool:
         """Mark learning data as used for training"""
         try:
