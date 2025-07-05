@@ -1,10 +1,11 @@
-modules = ["python-3.11"]
+modules = ["python-3.11", "web", "nodejs-20"]
 
 [nix]
 channel = "stable-24_05"
+packages = ["openssl", "postgresql"]
 
 [workflows]
-runButton = "DieAI Learning Server"
+runButton = "Project"
 
 [[workflows.workflow]]
 name = "Project"
@@ -14,6 +15,10 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "workflow.run"
 args = "DieAI Server"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start application"
 
 [[workflows.workflow]]
 name = "DieAI Server"
@@ -41,6 +46,19 @@ args = "python -c \"from services.database import DatabaseManager; db = Database
 task = "shell.exec"
 args = "python app.py"
 
+[[workflows.workflow]]
+name = "Start application"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "gunicorn --bind 0.0.0.0:5000 --reuse-port --reload main:app"
+waitForPort = 5000
+
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[deployment]
+deploymentTarget = "autoscale"
+run = ["gunicorn", "--bind", "0.0.0.0:5000", "main:app"]

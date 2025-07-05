@@ -1,44 +1,52 @@
+import os
+import logging
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
 from flask_cors import CORS
-import os
-import json
-from datetime import datetime, timedelta
-import secrets
-import hashlib
-import time
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from sqlalchemy.orm import DeclarativeBase
+from werkzeug.middleware.proxy_fix import ProxyFix
 
-# Import existing components
-from models.inference import InferenceEngine
-from services.database import DatabaseManager
-from services.search import SearchService
-from services.learning import LearningService
-from api.auth import AuthManager
-from api.endpoints import APIEndpoints
-from utils.rate_limiter import RateLimiter
-from utils.helpers import load_config
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
+class Base(DeclarativeBase):
+    pass
+
+db = SQLAlchemy(model_class=Base)
+
+# Create the app
 app = Flask(__name__)
-app.secret_key = os.getenv('SECRET_KEY', secrets.token_hex(32))
+app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key-change-in-production")
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+
+# Configure the database
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_recycle": 300,
+    "pool_pre_ping": True,
+}
+
+# Initialize extensions
+db.init_app(app)
 CORS(app)
 
-# Initialize components with PostgreSQL support
-print("Initializing DieAI components...")
-db_manager = DatabaseManager(use_postgres=True)
-auth_manager = AuthManager(db_manager)
-rate_limiter = RateLimiter(db_manager)
+# Initialize Flask-Login
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
 
-print("Loading AI inference engine...")
-inference_engine = InferenceEngine()
-inference_engine.load_model()
+# Initialize database tables
+with app.app_context():
+    # Import models to ensure they're registered
+    from models import User, APIKey, UsageStats, ConversationHistory, RateLimitEntry
+    db.create_all()
 
-# Set learning service
-print("Setting up learning service...")
-learning_service = LearningService(db_manager)
-inference_engine.set_learning_service(learning_service)
-
-print("DieAI components initialized successfully!")
-
-api_endpoints = APIEndpoints(db_manager, auth_manager, rate_limiter, inference_engine)
+@login_manager.user_loader
+def load_user(user_id):
+    from models import User
+    return User.query.get(int(user_id))
 
 # Web routes
 @app.route('/')
@@ -50,217 +58,181 @@ def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-
-        if auth_manager.authenticate_user(username, password):
-            session['user_id'] = username
-            session['logged_in'] = True
+        
+        if not username or not password:
+            flash('Username and password are required', 'error')
+            return render_template('login.html')
+        
+        from models import User
+        user = User.query.filter_by(username=username).first()
+        
+        if user and user.check_password(password):
+            login_user(user)
+            flash('Login successful!', 'success')
             return redirect(url_for('dashboard'))
         else:
-            flash('Invalid credentials')
-
+            flash('Invalid username or password', 'error')
+    
     return render_template('login.html')
 
-@app.route('/register', methods=['POST'])
+@app.route('/register', methods=['GET', 'POST'])
 def register():
-    username = request.form.get('username')
-    password = request.form.get('password')
-    email = request.form.get('email')
-
-    if not username or not password or not email:
-        flash('All fields are required')
+    if request.method == 'POST':
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        
+        if not username or not email or not password:
+            flash('All fields are required', 'error')
+            return render_template('login.html')
+        
+        from models import User
+        
+        # Check if user already exists
+        if User.query.filter_by(username=username).first():
+            flash('Username already exists', 'error')
+            return render_template('login.html')
+        
+        if User.query.filter_by(email=email).first():
+            flash('Email already exists', 'error')
+            return render_template('login.html')
+        
+        # Create new user
+        user = User(username=username, email=email)
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+        
+        flash('Registration successful! Please login.', 'success')
         return redirect(url_for('login'))
-
-    # Check if user already exists
-    if auth_manager.get_user_info(username):
-        flash('Username already exists')
-        return redirect(url_for('login'))
-
-    # Create new user
-    if auth_manager.create_user(username, password, email):
-        session['user_id'] = username
-        session['logged_in'] = True
-        return redirect(url_for('dashboard'))
-    else:
-        flash('Registration failed')
-        return redirect(url_for('login'))
+    
+    return render_template('login.html')
 
 @app.route('/logout')
+@login_required
 def logout():
-    session.clear()
+    logout_user()
+    flash('You have been logged out', 'info')
     return redirect(url_for('index'))
 
 @app.route('/dashboard')
+@login_required
 def dashboard():
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
-
-    username = session.get('user_id')
-    user_info = db_manager.get_user_info(username)
-    api_keys = db_manager.get_user_api_keys(username)
-
-    return render_template('dashboard.html', 
-                         username=username, 
-                         user_info=user_info,
-                         api_keys=api_keys)
+    from models import APIKey
+    api_keys = APIKey.query.filter_by(user_id=current_user.id).all()
+    return render_template('dashboard.html', api_keys=api_keys)
 
 @app.route('/generate_api_key', methods=['POST'])
+@login_required
 def generate_api_key():
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
-
-    username = session.get('user_id')
-    api_key = auth_manager.generate_api_key(username)
-
-    if api_key:
-        flash(f'New API key generated: {api_key}')
-    else:
-        flash('Failed to generate API key')
-
+    from models import APIKey
+    
+    name = request.form.get('name', 'Default Key')
+    
+    # Generate new API key
+    api_key = APIKey(user_id=current_user.id, name=name)
+    new_key = APIKey.generate_key()
+    api_key.set_key(new_key)
+    
+    db.session.add(api_key)
+    db.session.commit()
+    
+    flash(f'API Key generated: {new_key}', 'success')
     return redirect(url_for('dashboard'))
 
 @app.route('/revoke_api_key', methods=['POST'])
+@login_required
 def revoke_api_key():
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
-
-    username = session.get('user_id')
-    api_key = request.form.get('api_key')
-
-    if auth_manager.revoke_api_key(username, api_key):
-        flash('API key revoked successfully')
+    from models import APIKey
+    
+    key_id = request.form.get('key_id')
+    api_key = APIKey.query.filter_by(id=key_id, user_id=current_user.id).first()
+    
+    if api_key:
+        api_key.is_active = False
+        db.session.commit()
+        flash('API key revoked successfully', 'success')
     else:
-        flash('Failed to revoke API key')
-
+        flash('API key not found', 'error')
+    
     return redirect(url_for('dashboard'))
 
 @app.route('/health')
 def health_check():
     """Health check endpoint"""
-    try:
-        # Check model status
-        model_status = 'loaded' if inference_engine.model is not None else 'fallback_mode'
-        
-        # Check database status
-        db_status = 'connected' if db_manager.test_connection() else 'disconnected'
-        
-        return jsonify({
-            'status': 'healthy',
-            'model_status': model_status,
-            'database_status': db_status,
-            'timestamp': datetime.now().isoformat(),
-            'version': '1.0'
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'status': 'unhealthy',
-            'error': str(e),
-            'timestamp': datetime.now().isoformat()
-        }), 500
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': datetime.now().isoformat(),
+        'version': '1.0.0'
+    })
 
-# API endpoints
+# API endpoints - simplified for now
 @app.route('/api/chat', methods=['POST'])
 def api_chat():
-    return api_endpoints.chat_endpoint()
+    """Basic chat endpoint - will be enhanced with AI later"""
+    data = request.get_json()
+    
+    if not data or 'messages' not in data:
+        return jsonify({'error': 'Messages required'}), 400
+    
+    # Simple echo response for now
+    last_message = data['messages'][-1]['content']
+    response = {
+        'id': 'chat-' + str(int(time.time())),
+        'object': 'chat.completion',
+        'created': int(time.time()),
+        'model': 'dieai-transformer',
+        'choices': [{
+            'index': 0,
+            'message': {
+                'role': 'assistant',
+                'content': f"I received your message: {last_message}. AI features will be available soon!"
+            },
+            'finish_reason': 'stop'
+        }],
+        'usage': {
+            'prompt_tokens': 10,
+            'completion_tokens': 20,
+            'total_tokens': 30
+        }
+    }
+    
+    return jsonify(response)
 
-@app.route('/api/search', methods=['POST'])
-def api_search():
-    return api_endpoints.search_endpoint()
-
-@app.route('/api/models', methods=['GET'])
+@app.route('/api/models')
 def api_models():
-    return api_endpoints.models_endpoint()
+    """Get available models"""
+    models = [{
+        'id': 'dieai-transformer',
+        'name': 'DieAI Transformer',
+        'description': 'Custom transformer model for DieAI',
+        'max_tokens': 4096,
+        'capabilities': ['chat', 'search']
+    }]
+    
+    return jsonify({'models': models})
 
-@app.route('/api/usage', methods=['GET'])
-def api_usage():
-    return api_endpoints.usage_endpoint()
-
-# Web chat endpoint
-@app.route('/chat', methods=['POST'])
+@app.route('/web_chat', methods=['POST'])
 def web_chat():
-    if not session.get('logged_in'):
-        return jsonify({'error': 'Not authenticated. Please log in to use the chat.'}), 401
+    """Web chat endpoint for the frontend"""
+    data = request.get_json()
+    message = data.get('message', '')
+    
+    if not message:
+        return jsonify({'error': 'Message required'}), 400
+    
+    # Simple response for now
+    response = f"You said: {message}. AI features will be available soon!"
+    
+    return jsonify({
+        'response': response,
+        'timestamp': datetime.now().isoformat()
+    })
 
-    try:
-        data = request.get_json()
-        if not data:
-            return jsonify({'error': 'No data provided'}), 400
-            
-        message = data.get('message', '').strip()
-        use_search = data.get('use_search', False)
-
-        if not message:
-            return jsonify({'error': 'Message is required'}), 400
-
-        print(f"Processing chat message: {message[:50]}...")
-
-        # Get response from inference engine
-        response = inference_engine.generate_response(message, use_search=use_search)
-        
-        if not response:
-            response = "I apologize, but I'm having trouble generating a response right now. Please try again."
-
-        # Collect conversation data for learning
-        try:
-            session_id = session.get('session_id', f"web_session_{session.get('user_id', 'anonymous')}")
-            learning_service.collect_conversation_data(message, response, session_id)
-        except Exception as e:
-            print(f"Warning: Could not collect learning data: {e}")
-
-        # Log usage
-        try:
-            username = session.get('user_id')
-            if username:
-                db_manager.log_usage(username, 'web_chat', len(message.split()), len(response.split()))
-        except Exception as e:
-            print(f"Warning: Could not log usage: {e}")
-
-        return jsonify({
-            'response': response,
-            'timestamp': datetime.now().isoformat(),
-            'model': 'DieAI'
-        })
-        
-    except Exception as e:
-        print(f"Error in web chat: {e}")
-        return jsonify({
-            'error': 'I encountered an internal error. Please try again.',
-            'timestamp': datetime.now().isoformat()
-        }), 500
+# Import time for timestamps
+import time
+from datetime import datetime
 
 if __name__ == '__main__':
-    import argparse
-    import socket
-    
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--port', type=int, default=5000, help='Port to run the server on')
-    parser.add_argument('--host', type=str, default='0.0.0.0', help='Host to bind the server to')
-    args = parser.parse_args()
-    
-    # Find an available port if the default is in use
-    def find_free_port(start_port, host='0.0.0.0'):
-        for port in range(start_port, start_port + 10):
-            try:
-                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                    s.bind((host, port))
-                    return port
-            except OSError:
-                continue
-        return None
-    
-    port = find_free_port(args.port, args.host)
-    if port is None:
-        print(f"Could not find available port starting from {args.port}")
-        port = args.port
-    
-    print("DieAI model loaded successfully")
-    print(f"Starting server on {args.host}:{port}")
-    
-    try:
-        app.run(host=args.host, port=port, debug=True)
-    except OSError as e:
-        if "Address already in use" in str(e):
-            print(f"Port {port} is still in use. Trying port {port + 1}")
-            app.run(host=args.host, port=port + 1, debug=True)
-        else:
-            raise
+    # Development server
+    app.run(host='0.0.0.0', port=5000, debug=True)
