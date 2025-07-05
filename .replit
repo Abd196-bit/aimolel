@@ -31,7 +31,7 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pip install flask flask-cors torch transformers requests PyJWT"
+args = "pip install flask flask-cors torch transformers requests PyJWT beautifulsoup4 psutil"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
@@ -39,7 +39,7 @@ args = "python -c \"from services.database import DatabaseManager; db = Database
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python app.py --port=5000 --host=0.0.0.0"
+args = "python app.py"
 
 [[ports]]
 localPort = 5000

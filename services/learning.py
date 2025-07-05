@@ -388,7 +388,7 @@ class LearningService:
         text = re.sub(r'Advertisement', '', text, flags=re.IGNORECASE)
 
         # Fix common encoding issues
-        text = text.replace(''', "'").replace('"', '"').replace('"', '"')
+        text = text.replace("'", "'").replace(""", '"').replace(""", '"')
         text = text.replace('–', '-').replace('—', '-')
 
         # Remove URLs
