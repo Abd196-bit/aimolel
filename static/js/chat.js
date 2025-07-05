@@ -75,7 +75,9 @@ class DieAIChat {
             // Add assistant response
             const assistantMessage = {
                 role: 'assistant',
-                content: response.response || 'I apologize, but I encountered an error processing your request.'
+                content: response.choices && response.choices[0] && response.choices[0].message ? 
+                    response.choices[0].message.content : 
+                    'I apologize, but I encountered an error processing your request.'
             };
 
             this.addMessage(assistantMessage);
@@ -99,13 +101,13 @@ class DieAIChat {
     async getAIResponse(message) {
         const useSearch = this.searchToggle ? this.searchToggle.checked : false;
 
-        const response = await fetch('/chat', {
+        const response = await fetch('/api/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                message: message,
+                messages: [{ role: 'user', content: message }],
                 use_search: useSearch,
                 context: this.getRecentContext()
             })
