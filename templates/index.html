@@ -49,14 +49,12 @@
                     <p class="lead">Your Custom Transformer-Based AI Assistant</p>
                     <p class="mb-4">Experience the power of a custom-built transformer model with integrated search capabilities and API access.</p>
                     <div class="d-flex justify-content-center gap-3">
-                        <a href="#chat" class="btn btn-light btn-lg">
-                            <i class="fas fa-comments"></i> Start Chatting
+                        <a href="{{ url_for('chat') }}" class="btn btn-light btn-lg">
+                            <i class="fas fa-comments"></i> Chat with DieAI
                         </a>
-                        {% if not session.get('logged_in') %}
-                            <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-lg">
-                                <i class="fas fa-sign-in-alt"></i> Get API Access
-                            </a>
-                        {% endif %}
+                        <a href="{{ url_for('api_generator') }}" class="btn btn-outline-light btn-lg">
+                            <i class="fas fa-code"></i> Generate API Library
+                        </a>
                     </div>
                 </div>
             </div>
@@ -96,58 +94,39 @@
         </div>
     </div>
 
-    <!-- Chat Interface -->
-    <div class="container my-5" id="chat">
+    <!-- Quick Demo Section -->
+    <div class="container my-5">
         <div class="row justify-content-center">
-            <div class="col-lg-8">
-                <div class="chat-container">
-                    <div class="chat-header">
-                        <i class="fas fa-robot me-2"></i>
-                        Chat with DieAI
-                    </div>
-                    <div class="chat-messages" id="chat-messages">
-                        <!-- Messages will be added here dynamically -->
-                    </div>
-                    <div class="chat-input">
-                        <div class="row g-2">
-                            <div class="col">
-                                <textarea class="form-control" id="chat-input" 
-                                         placeholder="Type your message here..." 
-                                         rows="1"></textarea>
+            <div class="col-lg-8 text-center">
+                <h3 class="mb-4">Choose Your DieAI Experience</h3>
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="dashboard-card h-100">
+                            <div class="mb-3">
+                                <i class="fas fa-comments fa-3x text-primary"></i>
                             </div>
-                            <div class="col-auto">
-                                <button class="btn btn-primary" id="send-button">
-                                    <i class="fas fa-paper-plane"></i>
-                                </button>
-                            </div>
+                            <h4>Interactive Chat</h4>
+                            <p>Chat directly with DieAI in a dedicated interface. Get intelligent responses with optional web search.</p>
+                            <a href="{{ url_for('chat') }}" class="btn btn-primary">
+                                <i class="fas fa-arrow-right"></i> Start Chatting
+                            </a>
                         </div>
-                        <div class="row mt-2">
-                            <div class="col">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="search-toggle">
-                                    <label class="form-check-label" for="search-toggle">
-                                        <i class="fas fa-search"></i> Enable Search
-                                    </label>
-                                </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="dashboard-card h-100">
+                            <div class="mb-3">
+                                <i class="fas fa-code fa-3x text-success"></i>
                             </div>
-                            <div class="col-auto">
-                                <button class="btn btn-outline-secondary btn-sm" id="clear-chat">
-                                    <i class="fas fa-trash"></i> Clear
-                                </button>
-                            </div>
+                            <h4>Python Library</h4>
+                            <p>Generate a custom Python library to integrate DieAI into your applications and projects.</p>
+                            <a href="{{ url_for('api_generator') }}" class="btn btn-success">
+                                <i class="fas fa-download"></i> Get Library
+                            </a>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Loading Spinner -->
-    <div class="loading-spinner" id="loading-spinner">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-        <p class="mt-2">DieAI is thinking...</p>
     </div>
 
     <!-- API Documentation Section -->
@@ -210,7 +189,6 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
 
     <!-- Flash Messages -->
     {% with messages = get_flashed_messages() %}

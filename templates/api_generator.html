@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DieAI Python Library Generator</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" rel="stylesheet">
+    <style>
+        .api-page {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem 0;
+        }
+        
+        .api-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .api-header {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .code-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+        
+        .code-header {
+            background: #343a40;
+            color: white;
+            padding: 0.75rem 1rem;
+            display: flex;
+            justify-content: between;
+            align-items: center;
+        }
+        
+        .copy-btn {
+            background: none;
+            border: none;
+            color: #28a745;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-left: auto;
+        }
+        
+        .copy-btn:hover {
+            color: #20c997;
+        }
+        
+        pre {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 1.5rem;
+            margin: 0;
+            overflow-x: auto;
+            border-radius: 0;
+        }
+        
+        .install-section {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .feature-list li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .feature-list i {
+            color: #28a745;
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="api-page">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-10">
+                    <div class="api-card">
+                        <div class="api-header">
+                            <h2><i class="fas fa-code me-2"></i>DieAI Python Library</h2>
+                            <p class="mb-0">Generate a custom Python library for interacting with DieAI</p>
+                        </div>
+                        
+                        <div class="p-4">
+                            <!-- Installation Section -->
+                            <div class="install-section">
+                                <h4><i class="fas fa-download me-2"></i>Quick Installation</h4>
+                                <p class="mb-2">Copy the library code below and save it as <code>dieai_client.py</code></p>
+                                <p class="mb-0">Then use: <code>pip install requests</code></p>
+                            </div>
+                            
+                            <!-- Features -->
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <h5><i class="fas fa-star text-warning me-2"></i>Features</h5>
+                                    <ul class="feature-list">
+                                        <li><i class="fas fa-check"></i>Simple chat interface</li>
+                                        <li><i class="fas fa-check"></i>Web search integration</li>
+                                        <li><i class="fas fa-check"></i>Automatic retry logic</li>
+                                        <li><i class="fas fa-check"></i>Error handling</li>
+                                        <li><i class="fas fa-check"></i>Session management</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5><i class="fas fa-bolt text-primary me-2"></i>Usage</h5>
+                                    <ul class="feature-list">
+                                        <li><i class="fas fa-arrow-right"></i>Import the library</li>
+                                        <li><i class="fas fa-arrow-right"></i>Create DieAI instance</li>
+                                        <li><i class="fas fa-arrow-right"></i>Start asking questions</li>
+                                        <li><i class="fas fa-arrow-right"></i>Get intelligent responses</li>
+                                        <li><i class="fas fa-arrow-right"></i>Enable web search when needed</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <!-- Library Code -->
+                            <div class="code-section">
+                                <div class="code-header">
+                                    <span><i class="fab fa-python me-2"></i>dieai_client.py</span>
+                                    <button class="copy-btn" onclick="copyCode('library-code')">
+                                        <i class="fas fa-copy"></i> Copy
+                                    </button>
+                                </div>
+                                <pre id="library-code"><code class="python">"""
+DieAI Python Client Library
+A simple and powerful interface for interacting with DieAI
+"""
+import requests
+import json
+from typing import Optional, Dict, Any
+import time
+
+class DieAIError(Exception):
+    """Base exception for DieAI client errors"""
+    pass
+
+class DieAI:
+    """
+    DieAI Python Client
+    
+    Example usage:
+        from dieai_client import DieAI
+        
+        # Initialize client
+        ai = DieAI(base_url="your-dieai-url")
+        
+        # Ask a simple question
+        response = ai.ask("What is machine learning?")
+        print(response)
+        
+        # Ask with web search enabled
+        response = ai.ask("Latest news about AI", use_search=True)
+        print(response)
+    """
+    
+    def __init__(self, base_url: str = "http://localhost:5000", timeout: int = 30):
+        """
+        Initialize DieAI client
+        
+        Args:
+            base_url: Base URL of your DieAI instance
+            timeout: Request timeout in seconds
+        """
+        self.base_url = base_url.rstrip('/')
+        self.timeout = timeout
+        self.session = requests.Session()
+        self.conversation_history = []
+        
+    def ask(self, question: str, use_search: bool = True, keep_history: bool = True) -> str:
+        """
+        Ask DieAI a question
+        
+        Args:
+            question: Your question or message
+            use_search: Whether to enable web search for current information
+            keep_history: Whether to maintain conversation history
+            
+        Returns:
+            DieAI's response as a string
+        """
+        try:
+            # Add to conversation history
+            if keep_history:
+                self.conversation_history.append({"role": "user", "content": question})
+            
+            # Prepare request
+            payload = {
+                "messages": [{"role": "user", "content": question}],
+                "use_search": use_search
+            }
+            
+            # Make request
+            response = self.session.post(
+                f"{self.base_url}/api/chat",
+                json=payload,
+                timeout=self.timeout,
+                headers={"Content-Type": "application/json"}
+            )
+            
+            # Handle response
+            if response.status_code == 200:
+                data = response.json()
+                answer = data["choices"][0]["message"]["content"]
+                
+                # Add to conversation history
+                if keep_history:
+                    self.conversation_history.append({"role": "assistant", "content": answer})
+                
+                return answer
+            else:
+                raise DieAIError(f"Request failed with status {response.status_code}: {response.text}")
+                
+        except requests.exceptions.RequestException as e:
+            raise DieAIError(f"Network error: {str(e)}")
+        except Exception as e:
+            raise DieAIError(f"Unexpected error: {str(e)}")
+    
+    def chat(self, message: str, **kwargs) -> str:
+        """Alias for ask() method"""
+        return self.ask(message, **kwargs)
+    
+    def search_and_ask(self, question: str) -> str:
+        """Ask a question with web search enabled"""
+        return self.ask(question, use_search=True)
+    
+    def simple_ask(self, question: str) -> str:
+        """Ask a simple question without web search"""
+        return self.ask(question, use_search=False)
+    
+    def clear_history(self):
+        """Clear conversation history"""
+        self.conversation_history = []
+    
+    def get_history(self) -> list:
+        """Get conversation history"""
+        return self.conversation_history.copy()
+    
+    def health_check(self) -> Dict[str, Any]:
+        """Check if DieAI is running properly"""
+        try:
+            response = self.session.get(f"{self.base_url}/health", timeout=5)
+            if response.status_code == 200:
+                return response.json()
+            else:
+                raise DieAIError(f"Health check failed: {response.status_code}")
+        except Exception as e:
+            raise DieAIError(f"Health check error: {str(e)}")
+    
+    def get_models(self) -> Dict[str, Any]:
+        """Get available models information"""
+        try:
+            response = self.session.get(f"{self.base_url}/api/models", timeout=5)
+            if response.status_code == 200:
+                return response.json()
+            else:
+                raise DieAIError(f"Models request failed: {response.status_code}")
+        except Exception as e:
+            raise DieAIError(f"Models request error: {str(e)}")
+
+# Convenience functions
+def quick_ask(question: str, base_url: str = "http://localhost:5000") -> str:
+    """
+    Quick way to ask DieAI a question without creating a client instance
+    
+    Args:
+        question: Your question
+        base_url: DieAI instance URL
+        
+    Returns:
+        DieAI's response
+    """
+    client = DieAI(base_url)
+    return client.ask(question)
+
+def search_ask(question: str, base_url: str = "http://localhost:5000") -> str:
+    """
+    Quick way to ask DieAI a question with web search
+    
+    Args:
+        question: Your question
+        base_url: DieAI instance URL
+        
+    Returns:
+        DieAI's response with web search
+    """
+    client = DieAI(base_url)
+    return client.search_and_ask(question)
+
+if __name__ == "__main__":
+    # Example usage
+    print("DieAI Python Client - Example Usage")
+    print("-" * 40)
+    
+    # Initialize client
+    ai = DieAI()
+    
+    try:
+        # Health check
+        health = ai.health_check()
+        print(f"✓ DieAI is running: {health.get('status', 'unknown')}")
+        
+        # Simple questions
+        print("\n1. Simple Question:")
+        response = ai.simple_ask("Hello! What is your name?")
+        print(f"DieAI: {response}")
+        
+        print("\n2. Math Question:")
+        response = ai.simple_ask("What is 5 + 3?")
+        print(f"DieAI: {response}")
+        
+        print("\n3. Web Search Question:")
+        response = ai.search_and_ask("What's the weather like today?")
+        print(f"DieAI: {response}")
+        
+        # Show conversation history
+        print(f"\nConversation History: {len(ai.get_history())} messages")
+        
+    except DieAIError as e:
+        print(f"Error: {e}")
+        print("Make sure your DieAI instance is running!")
+</code></pre>
+                            </div>
+                            
+                            <!-- Usage Examples -->
+                            <div class="code-section">
+                                <div class="code-header">
+                                    <span><i class="fas fa-play-circle me-2"></i>Usage Examples</span>
+                                    <button class="copy-btn" onclick="copyCode('usage-examples')">
+                                        <i class="fas fa-copy"></i> Copy
+                                    </button>
+                                </div>
+                                <pre id="usage-examples"><code class="python"># Example 1: Basic Usage
+from dieai_client import DieAI
+
+ai = DieAI(base_url="http://your-dieai-url.com")
+response = ai.ask("Explain quantum computing in simple terms")
+print(response)
+
+# Example 2: Multiple Questions with History
+ai = DieAI()
+ai.ask("Hello, I'm learning about Python")
+ai.ask("Can you help me understand functions?")
+ai.ask("What about classes and objects?")
+
+# View conversation
+for msg in ai.get_history():
+    print(f"{msg['role']}: {msg['content'][:50]}...")
+
+# Example 3: Web Search for Current Information
+ai = DieAI()
+news = ai.search_and_ask("Latest developments in artificial intelligence")
+weather = ai.search_and_ask("Current weather in New York")
+stocks = ai.search_and_ask("Today's stock market performance")
+
+# Example 4: Quick Functions
+from dieai_client import quick_ask, search_ask
+
+# Quick question without creating client
+answer = quick_ask("What is machine learning?")
+
+# Quick search question
+current_info = search_ask("Latest news about space exploration")
+
+# Example 5: Error Handling
+from dieai_client import DieAI, DieAIError
+
+ai = DieAI()
+try:
+    response = ai.ask("Complex question here")
+    print(response)
+except DieAIError as e:
+    print(f"Something went wrong: {e}")
+
+# Example 6: Health Check
+ai = DieAI()
+try:
+    status = ai.health_check()
+    print(f"DieAI Status: {status}")
+except DieAIError:
+    print("DieAI is not accessible")
+</code></pre>
+                            </div>
+                            
+                            <!-- Installation Instructions -->
+                            <div class="code-section">
+                                <div class="code-header">
+                                    <span><i class="fas fa-terminal me-2"></i>Installation & Setup</span>
+                                    <button class="copy-btn" onclick="copyCode('install-instructions')">
+                                        <i class="fas fa-copy"></i> Copy
+                                    </button>
+                                </div>
+                                <pre id="install-instructions"><code class="bash"># Step 1: Save the library code as dieai_client.py
+# Copy the library code above and save it as 'dieai_client.py'
+
+# Step 2: Install required dependencies
+pip install requests
+
+# Step 3: Test the installation
+python dieai_client.py
+
+# Step 4: Use in your projects
+# Create a new Python file (e.g., my_ai_app.py) and use:
+
+from dieai_client import DieAI
+
+# Replace with your DieAI URL
+ai = DieAI(base_url="http://your-dieai-instance.com")
+
+# Start asking questions!
+response = ai.ask("Hello DieAI!")
+print(response)
+</code></pre>
+                            </div>
+                            
+                            <div class="text-center mt-4">
+                                <a href="{{ url_for('chat') }}" class="btn btn-primary me-3">
+                                    <i class="fas fa-comments"></i> Try DieAI Chat
+                                </a>
+                                <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-home"></i> Back to Home
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <script>
+        // Initialize syntax highlighting
+        hljs.highlightAll();
+        
+        // Copy code function
+        function copyCode(elementId) {
+            const element = document.getElementById(elementId);
+            const code = element.querySelector('code');
+            const text = code.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                // Show success feedback
+                const btn = element.previousElementSibling.querySelector('.copy-btn');
+                const icon = btn.querySelector('i');
+                const originalClass = icon.className;
+                
+                icon.className = 'fas fa-check';
+                btn.style.color = '#28a745';
+                
+                setTimeout(() => {
+                    icon.className = originalClass;
+                    btn.style.color = '#28a745';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy code:', err);
+                alert('Failed to copy code. Please select and copy manually.');
+            });
+        }
+        
+        // Add copy buttons to all code blocks
+        document.addEventListener('DOMContentLoaded', function() {
+            const codeBlocks = document.querySelectorAll('pre code');
+            codeBlocks.forEach((block, index) => {
+                const pre = block.parentElement;
+                if (!pre.id) {
+                    pre.id = `code-block-${index}`;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

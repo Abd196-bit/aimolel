@@ -149,6 +149,16 @@ def logout():
     logout_user()
     return redirect(url_for('index'))
 
+@app.route('/chat')
+def chat():
+    """Dedicated chat page"""
+    return render_template('chat.html')
+
+@app.route('/api-generator')
+def api_generator():
+    """API generator page"""
+    return render_template('api_generator.html')
+
 # API Routes
 @app.route('/health')
 def health_check():

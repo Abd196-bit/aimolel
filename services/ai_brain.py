@@ -29,12 +29,33 @@ class DieAIBrain:
             'intent': 'unknown'
         }
         
-        # Check if query needs web search
+        # Simple questions that don't need search
+        simple_patterns = [
+            'what is your name', 'who are you', 'what are you',
+            'hello', 'hi', 'hey', 'good morning', 'good afternoon',
+            'how are you', 'what can you do', 'help',
+            'thank you', 'thanks', 'bye', 'goodbye',
+            'what is 1+1', 'what is 2+2', 'simple math',
+            'tell me a joke', 'how old are you'
+        ]
+        
+        # Check if it's a simple question first
+        is_simple = any(pattern in query_lower for pattern in simple_patterns)
+        
+        if is_simple:
+            analysis['needs_search'] = False
+            analysis['query_type'] = 'simple'
+            return analysis
+        
+        # Check if query needs web search for complex topics
         search_indicators = [
-            'what is', 'who is', 'when did', 'where is', 'how to',
-            'current', 'latest', 'recent', 'today', 'now', 'news',
-            'weather', 'price', 'stock', 'market', 'rate',
-            'definition', 'meaning', 'explain', 'tell me about'
+            'current weather', 'weather in', 'temperature in',
+            'latest news', 'recent news', 'breaking news',
+            'current price', 'stock price', 'market today',
+            'what happened', 'when did', 'where is',
+            'current events', 'today\'s', 'this week',
+            'how to cook', 'how to make', 'recipe for',
+            'definition of', 'explain complex'
         ]
         
         analysis['needs_search'] = any(indicator in query_lower for indicator in search_indicators)
@@ -134,24 +155,57 @@ class DieAIBrain:
         return f"Based on my research:\n\n{info}\n\nSources: {', '.join(set(sources))}"
     
     def generate_fallback_response(self, query: str) -> str:
-        """Generate a fallback response when no search results are available"""
-        # Simple pattern matching for common questions
-        query_lower = query.lower()
+        """Generate a simple, direct response for basic questions"""
+        query_lower = query.lower().strip()
         
-        if 'hello' in query_lower or 'hi' in query_lower:
-            return "Hello! I'm DieAI, your intelligent assistant. I can help you find information, answer questions, and provide insights on a wide range of topics. What would you like to know?"
+        # Math questions
+        if 'what is 1+1' in query_lower or '1+1' in query_lower:
+            return "1 + 1 = 2"
+        if 'what is 2+2' in query_lower or '2+2' in query_lower:
+            return "2 + 2 = 4"
         
+        # Identity questions
+        if 'what is your name' in query_lower or 'who are you' in query_lower:
+            return "I'm DieAI, your intelligent assistant."
+        
+        if 'what are you' in query_lower:
+            return "I'm DieAI, an AI assistant that can help you find information and answer questions."
+        
+        # Greetings
+        if any(word in query_lower for word in ['hello', 'hi', 'hey']):
+            return "Hello! How can I help you today?"
+        
+        if 'good morning' in query_lower:
+            return "Good morning! What can I help you with?"
+        
+        if 'good afternoon' in query_lower:
+            return "Good afternoon! How can I assist you?"
+        
+        # Status questions
         if 'how are you' in query_lower:
-            return "I'm functioning well and ready to help! I'm an AI assistant that can search the web for current information and provide intelligent responses. What can I help you with today?"
+            return "I'm working great! Ready to help you with any questions."
         
-        if 'what can you do' in query_lower:
-            return "I can help you with:\n• Finding current information on any topic\n• Answering questions using web search\n• Providing news and updates\n• Explaining concepts and definitions\n• Weather information\n• Financial data\n• How-to guides and tutorials\n\nJust ask me anything!"
+        if 'how old are you' in query_lower:
+            return "I'm DieAI, a custom AI model. I don't have an age in the traditional sense."
         
-        if 'thank you' in query_lower or 'thanks' in query_lower:
-            return "You're welcome! I'm here to help whenever you need information or have questions. Feel free to ask me anything!"
+        # Capability questions
+        if 'what can you do' in query_lower or 'help' in query_lower:
+            return "I can help you with questions, find current information, explain topics, and more. Just ask me anything!"
         
-        # For other queries, encourage asking specific questions
-        return f"I'd be happy to help you with '{query}'. Let me search for the most current information on this topic. Could you be more specific about what you'd like to know?"
+        # Gratitude
+        if any(word in query_lower for word in ['thank you', 'thanks']):
+            return "You're welcome! Happy to help."
+        
+        # Goodbyes
+        if any(word in query_lower for word in ['bye', 'goodbye']):
+            return "Goodbye! Feel free to ask me anything anytime."
+        
+        # Jokes
+        if 'tell me a joke' in query_lower:
+            return "Why don't scientists trust atoms? Because they make up everything!"
+        
+        # Default for unrecognized simple queries
+        return f"I can help you with that! For more detailed information, I can search the web. What specifically would you like to know about '{query}'?"
     
     def process_query(self, query: str, use_search: bool = True) -> str:
         """Main method to process user queries and generate responses"""
@@ -172,8 +226,8 @@ class DieAIBrain:
         if len(self.conversation_memory) > 10:
             self.conversation_memory = self.conversation_memory[-10:]
         
-        # Decide whether to search
-        should_search = use_search and (analysis['needs_search'] or analysis['query_type'] != 'general')
+        # Decide whether to search - don't search for simple queries
+        should_search = use_search and analysis['needs_search'] and analysis['query_type'] != 'simple'
         
         if should_search:
             try:
