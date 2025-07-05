@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - DieAI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-brain"></i> DieAI
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('dashboard') }}">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-content" id="dashboard-container">
+        <div class="container">
+            <!-- Page Header -->
+            <div class="row mb-4">
+                <div class="col-lg-12">
+                    <h1 class="text-gradient">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </h1>
+                    <p class="lead">Manage your API keys and monitor usage statistics.</p>
+                </div>
+            </div>
+
+            <!-- Usage Statistics -->
+            <div class="row mb-4">
+                <div class="col-lg-4 mb-3">
+                    <div class="dashboard-card">
+                        <div class="usage-stats">
+                            <h5><i class="fas fa-chart-line text-primary"></i> Total Requests</h5>
+                            <div class="stat-value" id="total-requests">
+                                {{ usage_stats.total_requests or 0 }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 mb-3">
+                    <div class="dashboard-card">
+                        <div class="usage-stats">
+                            <h5><i class="fas fa-plug text-success"></i> Active Endpoints</h5>
+                            <div class="stat-value" id="total-endpoints">
+                                {{ usage_stats.by_endpoint|length or 0 }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 mb-3">
+                    <div class="dashboard-card">
+                        <div class="usage-stats">
+                            <h5><i class="fas fa-clock text-info"></i> Last Activity</h5>
+                            <div class="stat-value" style="font-size: 1.2rem;" id="last-activity">
+                                {% if usage_stats.by_endpoint %}
+                                    Recent
+                                {% else %}
+                                    Never
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API Keys Management -->
+            <div class="row mb-4">
+                <div class="col-lg-12">
+                    <div class="dashboard-card">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h3><i class="fas fa-key"></i> API Keys</h3>
+                            <button class="btn btn-primary" id="generate-api-key">
+                                <i class="fas fa-plus"></i> Generate New Key
+                            </button>
+                        </div>
+                        
+                        <div id="api-keys-list">
+                            {% if api_keys %}
+                                {% for key in api_keys %}
+                                    <div class="api-key-item">
+                                        <div class="api-key-info">
+                                            <div class="api-key-text">
+                                                {{ key.api_key[:8] }}...{{ key.api_key[-8:] }}
+                                            </div>
+                                            <small class="text-muted">
+                                                Created: {{ key.created_at }} | 
+                                                Usage: {{ key.usage_count }} requests |
+                                                Status: 
+                                                {% if key.is_active %}
+                                                    <span class="badge bg-success">Active</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">Inactive</span>
+                                                {% endif %}
+                                            </small>
+                                        </div>
+                                        <div class="api-key-actions">
+                                            <button class="btn btn-sm btn-outline-primary copy-api-key" 
+                                                    data-api-key="{{ key.api_key }}">
+                                                <i class="fas fa-copy"></i> Copy
+                                            </button>
+                                            {% if key.is_active %}
+                                                <button class="btn btn-sm btn-outline-danger revoke-api-key" 
+                                                        data-api-key="{{ key.api_key }}">
+                                                    <i class="fas fa-ban"></i> Revoke
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center text-muted py-5">
+                                    <i class="fas fa-key fa-4x mb-3"></i>
+                                    <h4>No API Keys Yet</h4>
+                                    <p>Generate your first API key to start using the DieAI API.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Usage by Endpoint -->
+            {% if usage_stats.by_endpoint %}
+                <div class="row mb-4">
+                    <div class="col-lg-12">
+                        <div class="dashboard-card">
+                            <h3><i class="fas fa-chart-bar"></i> Usage by Endpoint</h3>
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Endpoint</th>
+                                            <th>Requests</th>
+                                            <th>Percentage</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for endpoint in usage_stats.by_endpoint %}
+                                            <tr>
+                                                <td>
+                                                    <code>{{ endpoint.endpoint }}</code>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-primary">{{ endpoint.request_count }}</span>
+                                                </td>
+                                                <td>
+                                                    <div class="progress" style="height: 20px;">
+                                                        <div class="progress-bar" 
+                                                             style="width: {{ (endpoint.request_count / usage_stats.total_requests * 100) | round(1) }}%">
+                                                            {{ (endpoint.request_count / usage_stats.total_requests * 100) | round(1) }}%
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- API Testing Interface -->
+            <div class="row mb-4">
+                <div class="col-lg-12">
+                    <div class="dashboard-card">
+                        <h3><i class="fas fa-flask"></i> API Testing</h3>
+                        <p class="text-muted">Test your API keys and endpoints directly from the dashboard.</p>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">API Key</label>
+                                    <select class="form-select" id="test-api-key-select">
+                                        <option value="">Select an API key...</option>
+                                        {% for key in api_keys %}
+                                            {% if key.is_active %}
+                                                <option value="{{ key.api_key }}">
+                                                    {{ key.api_key[:8] }}...{{ key.api_key[-8:] }}
+                                                </option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Test Message</label>
+                                    <textarea class="form-control" id="test-message" rows="3" 
+                                              placeholder="Enter a test message...">Hello DieAI! Can you tell me about transformers?</textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="test-use-search">
+                                        <label class="form-check-label" for="test-use-search">
+                                            <i class="fas fa-search"></i> Enable Search
+                                        </label>
+                                    </div>
+                                </div>
+                                <button class="btn btn-success" id="test-api-btn">
+                                    <i class="fas fa-play"></i> Test API
+                                </button>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Response</label>
+                                <div id="test-response" class="border rounded p-3 bg-light" style="min-height: 200px;">
+                                    <div class="text-muted text-center">
+                                        <i class="fas fa-info-circle"></i> Test results will appear here
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Model Information -->
+            <div class="row mb-4">
+                <div class="col-lg-12">
+                    <div class="dashboard-card">
+                        <h3><i class="fas fa-info-circle"></i> Model Information</h3>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5>DieAI Transformer</h5>
+                                <ul class="list-unstyled">
+                                    <li><strong>Version:</strong> 1.0</li>
+                                    <li><strong>Architecture:</strong> Custom Transformer</li>
+                                    <li><strong>Parameters:</strong> ~150M</li>
+                                    <li><strong>Context Length:</strong> 1024 tokens</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h5>Capabilities</h5>
+                                <ul class="list-unstyled">
+                                    <li><i class="fas fa-check text-success"></i> Text Generation</li>
+                                    <li><i class="fas fa-check text-success"></i> Conversation</li>
+                                    <li><i class="fas fa-check text-success"></i> Search Integration</li>
+                                    <li><i class="fas fa-check text-success"></i> API Access</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="row mb-4">
+                <div class="col-lg-12">
+                    <div class="dashboard-card">
+                        <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+                        <div class="row">
+                            <div class="col-md-3 mb-2">
+                                <button class="btn btn-outline-primary w-100" onclick="window.open('{{ url_for('index') }}#chat', '_blank')">
+                                    <i class="fas fa-comments"></i> Open Chat
+                                </button>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <button class="btn btn-outline-info w-100" id="refresh-data">
+                                    <i class="fas fa-sync"></i> Refresh Data
+                                </button>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <button class="btn btn-outline-success w-100" onclick="window.dieaiDashboard.exportUsageData()">
+                                    <i class="fas fa-download"></i> Export Data
+                                </button>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <button class="btn btn-outline-warning w-100" onclick="window.open('/api/health', '_blank')">
+                                    <i class="fas fa-heartbeat"></i> Health Check
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div class="loading-spinner" id="loading-spinner">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2">Loading dashboard data...</p>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12 text-center">
+                    <p>&copy; 2025 DieAI. Custom Transformer-Based AI Model.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
+                {% for message in messages %}
+                    <div class="toast show" role="alert">
+                        <div class="toast-header">
+                            <i class="fas fa-info-circle text-primary me-2"></i>
+                            <strong class="me-auto">DieAI</strong>
+                            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+                        </div>
+                        <div class="toast-body">
+                            {{ message }}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <script>
+        // API Testing functionality
+        document.getElementById('test-api-btn').addEventListener('click', async function() {
+            const apiKey = document.getElementById('test-api-key-select').value;
+            const message = document.getElementById('test-message').value;
+            const useSearch = document.getElementById('test-use-search').checked;
+            const responseDiv = document.getElementById('test-response');
+            
+            if (!apiKey) {
+                responseDiv.innerHTML = '<div class="alert alert-warning">Please select an API key</div>';
+                return;
+            }
+            
+            if (!message.trim()) {
+                responseDiv.innerHTML = '<div class="alert alert-warning">Please enter a test message</div>';
+                return;
+            }
+            
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
+            responseDiv.innerHTML = '<div class="text-muted"><i class="fas fa-spinner fa-spin"></i> Testing API...</div>';
+            
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': apiKey
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        use_search: useSearch
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    responseDiv.innerHTML = `
+                        <div class="alert alert-success">
+                            <h6><i class="fas fa-check"></i> Success!</h6>
+                            <p><strong>Response:</strong> ${data.response}</p>
+                            <small class="text-muted">Timestamp: ${data.timestamp}</small>
+                        </div>
+                    `;
+                } else {
+                    responseDiv.innerHTML = `
+                        <div class="alert alert-danger">
+                            <h6><i class="fas fa-exclamation-triangle"></i> Error</h6>
+                            <p>${data.error || 'Unknown error occurred'}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                responseDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <h6><i class="fas fa-exclamation-triangle"></i> Connection Error</h6>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            } finally {
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-play"></i> Test API';
+            }
+        });
+        
+        // Initialize animations
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.dashboard-card');
+            cards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.classList.add('animate-fade-in-up');
+                }, index * 100);
+            });
+        });
+    </script>
+</body>
+</html>

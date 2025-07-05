@@ -1,0 +1,26 @@
+{
+  "epochs": 20,
+  "batch_size": 4,
+  "max_length": 512,
+  "learning_rate": 1e-4,
+  "weight_decay": 0.01,
+  "save_every": 5,
+  "model_save_path": "models/dieai_model.pt",
+  "vocab_save_path": "models/vocab.json",
+  "log_every": 100,
+  "validate_every": 1000,
+  "early_stopping": {
+    "patience": 5,
+    "min_delta": 0.001
+  },
+  "scheduler": {
+    "type": "cosine",
+    "T_max": 1000,
+    "eta_min": 1e-6
+  },
+  "gradient_clipping": {
+    "max_norm": 1.0
+  },
+  "mixed_precision": false,
+  "seed": 42
+}

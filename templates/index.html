@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DieAI - Custom Transformer AI Model</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-brain"></i> DieAI
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">Home</a>
+                    </li>
+                    {% if session.get('logged_in') %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12 text-center">
+                    <h1 class="display-4 fw-bold">DieAI</h1>
+                    <p class="lead">Your Custom Transformer-Based AI Assistant</p>
+                    <p class="mb-4">Experience the power of a custom-built transformer model with integrated search capabilities and API access.</p>
+                    <div class="d-flex justify-content-center gap-3">
+                        <a href="#chat" class="btn btn-light btn-lg">
+                            <i class="fas fa-comments"></i> Start Chatting
+                        </a>
+                        {% if not session.get('logged_in') %}
+                            <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-lg">
+                                <i class="fas fa-sign-in-alt"></i> Get API Access
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <div class="container my-5">
+        <div class="row">
+            <div class="col-lg-4 mb-4">
+                <div class="dashboard-card text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-brain fa-3x text-primary"></i>
+                    </div>
+                    <h4>Custom Transformer</h4>
+                    <p>Built from scratch using PyTorch with attention mechanisms and advanced training techniques.</p>
+                </div>
+            </div>
+            <div class="col-lg-4 mb-4">
+                <div class="dashboard-card text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-search fa-3x text-success"></i>
+                    </div>
+                    <h4>Search Integration</h4>
+                    <p>Enhanced responses with real-time search capabilities from multiple sources.</p>
+                </div>
+            </div>
+            <div class="col-lg-4 mb-4">
+                <div class="dashboard-card text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-code fa-3x text-info"></i>
+                    </div>
+                    <h4>API Access</h4>
+                    <p>RESTful API with authentication, rate limiting, and comprehensive usage tracking.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Interface -->
+    <div class="container my-5" id="chat">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="chat-container">
+                    <div class="chat-header">
+                        <i class="fas fa-robot me-2"></i>
+                        Chat with DieAI
+                    </div>
+                    <div class="chat-messages" id="chat-messages">
+                        <!-- Messages will be added here dynamically -->
+                    </div>
+                    <div class="chat-input">
+                        <div class="row g-2">
+                            <div class="col">
+                                <textarea class="form-control" id="chat-input" 
+                                         placeholder="Type your message here..." 
+                                         rows="1"></textarea>
+                            </div>
+                            <div class="col-auto">
+                                <button class="btn btn-primary" id="send-button">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="search-toggle">
+                                    <label class="form-check-label" for="search-toggle">
+                                        <i class="fas fa-search"></i> Enable Search
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-auto">
+                                <button class="btn btn-outline-secondary btn-sm" id="clear-chat">
+                                    <i class="fas fa-trash"></i> Clear
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div class="loading-spinner" id="loading-spinner">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2">DieAI is thinking...</p>
+    </div>
+
+    <!-- API Documentation Section -->
+    <div class="container my-5">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="dashboard-card">
+                    <h3><i class="fas fa-book"></i> API Documentation</h3>
+                    <p>Integrate DieAI into your applications using our RESTful API.</p>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Quick Start</h5>
+                            <pre class="bg-light p-3 rounded"><code>curl -X POST /api/chat \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-api-key" \
+  -d '{
+    "message": "Hello DieAI!",
+    "use_search": false
+  }'</code></pre>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Available Endpoints</h5>
+                            <ul class="list-unstyled">
+                                <li><code class="text-primary">POST /api/chat</code> - Chat with AI</li>
+                                <li><code class="text-success">POST /api/search</code> - Search functionality</li>
+                                <li><code class="text-info">GET /api/models</code> - List available models</li>
+                                <li><code class="text-warning">GET /api/usage</code> - Get usage statistics</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    {% if not session.get('logged_in') %}
+                        <div class="text-center mt-4">
+                            <a href="{{ url_for('login') }}" class="btn btn-primary">
+                                <i class="fas fa-key"></i> Get Your API Key
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12 text-center">
+                    <p>&copy; 2025 DieAI. Custom Transformer-Based AI Model.</p>
+                    <p class="mb-0">
+                        <small>
+                            Built with PyTorch • Powered by Transformers • Enhanced with Search
+                        </small>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
+                {% for message in messages %}
+                    <div class="toast show" role="alert">
+                        <div class="toast-header">
+                            <i class="fas fa-info-circle text-primary me-2"></i>
+                            <strong class="me-auto">DieAI</strong>
+                            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+                        </div>
+                        <div class="toast-body">
+                            {{ message }}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <script>
+        // Initialize fade-in animations
+        document.addEventListener('DOMContentLoaded', function() {
+            const elements = document.querySelectorAll('.dashboard-card');
+            elements.forEach((el, index) => {
+                setTimeout(() => {
+                    el.classList.add('animate-fade-in-up');
+                }, index * 200);
+            });
+        });
+    </script>
+</body>
+</html>
