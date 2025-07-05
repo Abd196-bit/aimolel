@@ -5,7 +5,7 @@ channel = "stable-24_05"
 packages = ["openssl", "postgresql"]
 
 [workflows]
-runButton = "DieAI Server (Port 5002)"
+runButton = "Project"
 
 [[workflows.workflow]]
 name = "Project"
