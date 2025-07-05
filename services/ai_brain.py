@@ -32,11 +32,13 @@ class DieAIBrain:
         # Simple questions that don't need search
         simple_patterns = [
             'what is your name', 'who are you', 'what are you',
-            'hello', 'hi', 'hey', 'good morning', 'good afternoon',
-            'how are you', 'what can you do', 'help',
-            'thank you', 'thanks', 'bye', 'goodbye',
-            'what is 1+1', 'what is 2+2', 'simple math',
-            'tell me a joke', 'how old are you'
+            'hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening',
+            'how are you', 'what can you do', 'help', 'capabilities',
+            'thank you', 'thanks', 'bye', 'goodbye', 'see you',
+            'what is 1+1', 'what is 2+2', 'what is 3+3', 'simple math',
+            'tell me a joke', 'how old are you', 'where are you from',
+            'who created you', 'who made you', 'what language', 'what programming',
+            'can you learn', 'do you remember', 'are you real', 'are you human'
         ]
         
         # Check if it's a simple question first
@@ -163,13 +165,68 @@ class DieAIBrain:
             return "1 + 1 = 2"
         if 'what is 2+2' in query_lower or '2+2' in query_lower:
             return "2 + 2 = 4"
+        if 'what is 3+3' in query_lower or '3+3' in query_lower:
+            return "3 + 3 = 6"
+        
+        # Try to solve basic math expressions
+        import re
+        
+        # Check for simple math patterns
+        if any(op in query_lower for op in ['+', '-', '*', 'x', '=']):
+            # Extract math expression
+            expr = query_lower.replace('what is ', '').replace('what\'s ', '').strip()
+            
+            try:
+                if '+' in expr:
+                    parts = expr.split('+')
+                    if len(parts) == 2:
+                        a = int(parts[0].strip())
+                        b = int(parts[1].strip())
+                        return f"{a} + {b} = {a + b}"
+                elif '-' in expr and not expr.startswith('-'):
+                    parts = expr.split('-')
+                    if len(parts) == 2:
+                        a = int(parts[0].strip())
+                        b = int(parts[1].strip())
+                        return f"{a} - {b} = {a - b}"
+                elif '*' in expr or 'x' in expr:
+                    expr_clean = expr.replace('*', 'x')
+                    parts = expr_clean.split('x')
+                    if len(parts) == 2:
+                        a = int(parts[0].strip())
+                        b = int(parts[1].strip())
+                        return f"{a} × {b} = {a * b}"
+                elif '/' in expr:
+                    parts = expr.split('/')
+                    if len(parts) == 2:
+                        a = int(parts[0].strip())
+                        b = int(parts[1].strip())
+                        if b != 0:
+                            return f"{a} ÷ {b} = {a / b}"
+            except:
+                pass
         
         # Identity questions
         if 'what is your name' in query_lower or 'who are you' in query_lower:
-            return "I'm DieAI, your intelligent assistant."
+            return "I'm DieAI, your intelligent assistant. I can help you with questions, search the web for current information, and provide detailed explanations on various topics."
         
         if 'what are you' in query_lower:
-            return "I'm DieAI, an AI assistant that can help you find information and answer questions."
+            return "I'm DieAI, a custom-built AI assistant with web search capabilities. I can answer questions, find current information, solve basic math, and help with a wide range of topics."
+        
+        if 'who created you' in query_lower or 'who made you' in query_lower:
+            return "I'm DieAI, a custom transformer-based AI model. I was built as an intelligent assistant with integrated web search capabilities."
+        
+        if 'what language' in query_lower or 'what programming' in query_lower:
+            return "I'm built using Python with Flask for the web interface, and I use multiple search engines to find current information. My responses are generated using custom AI logic."
+        
+        if 'can you learn' in query_lower:
+            return "I can process and respond to new information in each conversation, but I don't permanently learn from individual interactions. Each conversation is independent."
+        
+        if 'do you remember' in query_lower:
+            return "I can remember things within our current conversation, but I don't retain information between different conversations for privacy reasons."
+        
+        if 'are you real' in query_lower or 'are you human' in query_lower:
+            return "I'm a real AI assistant, but I'm not human. I'm a computer program designed to be helpful, informative, and conversational."
         
         # Greetings
         if any(word in query_lower for word in ['hello', 'hi', 'hey']):
