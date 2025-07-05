@@ -12,9 +12,13 @@ from .knowledge_base import KnowledgeBase
 from .math_solver import MathSolver
 from .science_facts import ScienceFacts
 from .unit_converter import UnitConverter
+from .chatbot import ChatBot, AIRobot, ConversationAnalyzer
 
 __all__ = [
     'DieAI',
+    'ChatBot',
+    'AIRobot',
+    'ConversationAnalyzer',
     'KnowledgeBase',
     'MathSolver', 
     'ScienceFacts',

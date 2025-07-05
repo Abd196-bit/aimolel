@@ -60,6 +60,57 @@ print(response.choices[0].message.content)
 # Output: "100 meters = 328.08 feet"
 ```
 
+### Building Chatbots
+
+```python
+from dieai import ChatBot
+
+# Create an educational chatbot
+bot = ChatBot(
+    name="MathTutor",
+    personality="educational",
+    knowledge_domains=["math", "science"]
+)
+
+# Add custom responses
+bot.add_custom_response("hello", "Hi! I'm your math tutor. What would you like to learn?")
+
+# Chat with the bot
+response = bot.chat("What is the quadratic formula?")
+print(response)
+
+# Multi-turn conversation
+response = bot.chat("Solve x² - 5x + 6 = 0")
+print(response)
+```
+
+### Building AI Robots
+
+```python
+from dieai import AIRobot
+
+# Create an intelligent robot
+robot = AIRobot(
+    robot_name="EduBot", 
+    capabilities=["speech", "movement", "calculation", "teaching"]
+)
+
+# Process voice commands
+command_result = robot.process_voice_command("Calculate the area of a circle with radius 5")
+print(command_result["speech_response"])
+
+# Make intelligent decisions
+decision = robot.make_decision(
+    "Student is struggling with algebra",
+    ["provide hints", "show step-by-step solution", "give practice problems"]
+)
+print(decision["decision"])
+
+# Process sensor data
+sensor_result = robot.process_sensor_data("temperature", 25.5)
+print(sensor_result)
+```
+
 ### Direct Component Usage
 
 ```python
@@ -267,6 +318,68 @@ The library supports conversion between units in:
 - `convert_multiple(value, from_unit, target_units)`: Multiple conversions
 - `get_supported_units(unit_type)`: List supported units
 
+## Real-World Applications
+
+DieAI enables you to build sophisticated AI applications across various domains:
+
+### 🎓 Educational Applications
+- **Math Tutoring Bots**: Personalized algebra, calculus, and geometry assistance
+- **Science Learning Assistants**: Interactive physics, chemistry, and biology tutors
+- **Study Buddies**: Patient, encouraging bots that adapt to learning pace
+
+### 🤖 AI Robots & Automation
+- **Educational Robots**: Interactive teaching assistants for classrooms and labs
+- **Smart Home Systems**: Intelligent environmental control and energy management
+- **Industrial Automation**: Quality control, safety monitoring, and process optimization
+
+### 💼 Professional Tools
+- **Engineering Assistants**: Structural analysis, design calculations, and optimization
+- **Financial Advisors**: Investment calculations, compound interest, and planning tools
+- **Laboratory Assistants**: Experiment guidance, data analysis, and safety protocols
+
+### 🎯 Custom Solutions
+- **Fitness Coaches**: Pace calculations, calorie estimation, and workout planning
+- **Research Tools**: Data analysis, statistical calculations, and hypothesis testing
+- **Problem Solvers**: Domain-specific intelligent decision-making systems
+
+## Examples
+
+Check out the `/examples` directory for complete implementations:
+
+- **`simple_chatbot.py`**: Basic educational chatbot with custom responses
+- **`ai_robot.py`**: Intelligent robot with voice commands and sensor processing
+- **`advanced_applications.py`**: Complex AI systems for various industries
+
+## Advanced Features
+
+### Plugin System
+```python
+# Add custom functionality to chatbots
+def custom_plugin(user_input, context):
+    if "special_command" in user_input:
+        return "Custom response for special command"
+    return None
+
+bot.add_plugin(custom_plugin)
+```
+
+### Conversation Analysis
+```python
+from dieai import ConversationAnalyzer
+
+analyzer = ConversationAnalyzer()
+insights = analyzer.analyze_conversation(conversation_history)
+print(insights["insights"])
+```
+
+### Multi-Domain Intelligence
+```python
+# Create specialized AI for different domains
+math_bot = ChatBot("MathGenius", "educational", ["math"])
+science_bot = ChatBot("ScienceExplorer", "creative", ["science"])
+general_bot = ChatBot("Assistant", "helpful", ["math", "science", "general"])
+```
+
 ## License
 
 MIT License
@@ -277,4 +390,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Support
 
-For issues and questions, please visit the [GitHub repository](https://github.com/dieai/dieai-knowledge).
+For issues and questions, please visit the [GitHub repository](https://github.com/dieai/dieai).
