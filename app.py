@@ -1,5 +1,7 @@
 import os
+import time
 import logging
+from datetime import datetime
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
@@ -229,9 +231,7 @@ def web_chat():
         'timestamp': datetime.now().isoformat()
     })
 
-# Import time for timestamps
-import time
-from datetime import datetime
+
 
 if __name__ == '__main__':
     # Development server
