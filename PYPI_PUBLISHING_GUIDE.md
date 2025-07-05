@@ -1,6 +1,6 @@
-# Publishing DieAI Knowledge Library to PyPI
+# Publishing DieAI Library to PyPI
 
-This guide shows you how to publish the `dieai-knowledge` library to PyPI.
+This guide shows you how to publish the `dieai` library to PyPI - an OpenAI-like API for building chatbots and AI projects.
 
 ## Prerequisites
 

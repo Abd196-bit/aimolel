@@ -3,9 +3,9 @@ requires = ["setuptools>=45", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "dieai-knowledge"
+name = "dieai"
 version = "1.0.0"
-description = "A comprehensive Python library for mathematics and science knowledge processing"
+description = "AI library similar to OpenAI for building chatbots and intelligent applications"
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}

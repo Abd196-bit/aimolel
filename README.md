@@ -1,26 +1,71 @@
-# DieAI Knowledge Library
+# DieAI
 
-A comprehensive Python library for mathematics and science knowledge processing, providing tools for solving mathematical problems, accessing scientific facts, and performing unit conversions.
+An AI library similar to OpenAI for building chatbots and intelligent applications. DieAI provides comprehensive mathematics and science knowledge with an easy-to-use API interface.
 
 ## Features
 
-- **Mathematical Problem Solving**: Solve equations, calculate geometry, statistics, and more
-- **Scientific Knowledge Base**: Access facts, formulas, and constants across multiple disciplines
+- **OpenAI-like API**: Familiar chat completions interface for easy integration
+- **Mathematical Intelligence**: Solve equations, calculate geometry, statistics, and more
+- **Scientific Knowledge**: Access facts, formulas, and constants across multiple disciplines
 - **Unit Conversion**: Convert between various units of measurement
-- **Comprehensive Data**: Built-in knowledge base covering mathematics, physics, chemistry, and biology
+- **Chatbot Ready**: Perfect for building AI assistants and educational tools
 
 ## Installation
 
 ```bash
-pip install dieai-knowledge
+pip install dieai
 ```
 
 ## Quick Start
 
-```python
-from dieai_knowledge import KnowledgeBase, MathSolver, ScienceFacts, UnitConverter
+### OpenAI-Style Usage
 
-# Initialize components
+```python
+from dieai import DieAI
+
+# Initialize client
+client = DieAI()
+
+# Chat completions (similar to OpenAI)
+response = client.chat.completions.create(
+    model="dieai-1.0",
+    messages=[
+        {"role": "user", "content": "What is 15 + 25?"}
+    ]
+)
+
+print(response.choices[0].message.content)
+# Output: "15 + 25 = 40"
+
+# Math and science queries
+response = client.chat.completions.create(
+    model="dieai-1.0",
+    messages=[
+        {"role": "user", "content": "Calculate the area of a circle with radius 5"}
+    ]
+)
+
+print(response.choices[0].message.content)
+# Output: "Circle with radius 5: Area = 78.54, Circumference = 31.42"
+
+# Unit conversions
+response = client.chat.completions.create(
+    model="dieai-1.0",
+    messages=[
+        {"role": "user", "content": "Convert 100 meters to feet"}
+    ]
+)
+
+print(response.choices[0].message.content)
+# Output: "100 meters = 328.08 feet"
+```
+
+### Direct Component Usage
+
+```python
+from dieai import KnowledgeBase, MathSolver, ScienceFacts, UnitConverter
+
+# Initialize components directly
 kb = KnowledgeBase()
 math_solver = MathSolver()
 science = ScienceFacts()

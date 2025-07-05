@@ -1,5 +1,5 @@
 """
-Setup script for DieAI Knowledge Library
+Setup script for DieAI - AI Library for Chatbots and Projects
 """
 from setuptools import setup, find_packages
 import os
@@ -10,24 +10,29 @@ with open(os.path.join(this_directory, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 # Read version from __init__.py
-with open(os.path.join(this_directory, 'dieai_knowledge', '__init__.py'), 'r') as f:
-    for line in f:
-        if line.startswith('__version__'):
-            version = line.split('=')[1].strip().strip('"').strip("'")
-            break
+version = "1.0.0"  # Default version
+try:
+    with open(os.path.join(this_directory, 'dieai_knowledge', '__init__.py'), 'r') as f:
+        for line in f:
+            if line.startswith('__version__'):
+                version = line.split('=')[1].strip().strip('"').strip("'")
+                break
+except FileNotFoundError:
+    pass
 
 setup(
-    name="dieai-knowledge",
+    name="dieai",
     version=version,
     author="DieAI Team",
     author_email="info@dieai.com",
-    description="A comprehensive Python library for mathematics and science knowledge processing",
+    description="AI library similar to OpenAI for building chatbots and intelligent applications",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/dieai/dieai-knowledge",
+    url="https://github.com/dieai/dieai",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 4 - Beta",
+        "Intended Audience :: Developers",
         "Intended Audience :: Education",
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: MIT License",
@@ -38,7 +43,8 @@ setup(
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
-        "Topic :: Scientific/Engineering",
+        "Topic :: Software Development :: Libraries :: Python Modules",
+        "Topic :: Scientific/Engineering :: Artificial Intelligence",
         "Topic :: Scientific/Engineering :: Mathematics",
         "Topic :: Scientific/Engineering :: Physics",
         "Topic :: Scientific/Engineering :: Chemistry",
@@ -61,10 +67,10 @@ setup(
     package_data={
         "dieai_knowledge": ["../data.txt"],
     },
-    keywords="mathematics science physics chemistry biology education knowledge ai",
+    keywords="ai chatbot openai artificial intelligence mathematics science knowledge api",
     project_urls={
-        "Bug Reports": "https://github.com/dieai/dieai-knowledge/issues",
-        "Source": "https://github.com/dieai/dieai-knowledge",
-        "Documentation": "https://github.com/dieai/dieai-knowledge/wiki",
+        "Bug Reports": "https://github.com/dieai/dieai/issues",
+        "Source": "https://github.com/dieai/dieai",
+        "Documentation": "https://github.com/dieai/dieai/wiki",
     },
 )
