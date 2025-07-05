@@ -22,14 +22,21 @@ app.secret_key = os.getenv('SECRET_KEY', secrets.token_hex(32))
 CORS(app)
 
 # Initialize components with PostgreSQL support
+print("Initializing DieAI components...")
 db_manager = DatabaseManager(use_postgres=True)
 auth_manager = AuthManager(db_manager)
 rate_limiter = RateLimiter(db_manager)
+
+print("Loading AI inference engine...")
 inference_engine = InferenceEngine()
+inference_engine.load_model()
 
 # Set learning service
+print("Setting up learning service...")
 learning_service = LearningService(db_manager)
 inference_engine.set_learning_service(learning_service)
+
+print("DieAI components initialized successfully!")
 
 api_endpoints = APIEndpoints(db_manager, auth_manager, rate_limiter, inference_engine)
 
@@ -126,6 +133,31 @@ def revoke_api_key():
 
     return redirect(url_for('dashboard'))
 
+@app.route('/health')
+def health_check():
+    """Health check endpoint"""
+    try:
+        # Check model status
+        model_status = 'loaded' if inference_engine.model is not None else 'fallback_mode'
+        
+        # Check database status
+        db_status = 'connected' if db_manager.test_connection() else 'disconnected'
+        
+        return jsonify({
+            'status': 'healthy',
+            'model_status': model_status,
+            'database_status': db_status,
+            'timestamp': datetime.now().isoformat(),
+            'version': '1.0'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'status': 'unhealthy',
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
 # API endpoints
 @app.route('/api/chat', methods=['POST'])
 def api_chat():
@@ -147,33 +179,54 @@ def api_usage():
 @app.route('/chat', methods=['POST'])
 def web_chat():
     if not session.get('logged_in'):
-        return jsonify({'error': 'Not authenticated'}), 401
-
-    data = request.get_json()
-    message = data.get('message', '')
-    use_search = data.get('use_search', False)
-
-    if not message:
-        return jsonify({'error': 'Message is required'}), 400
+        return jsonify({'error': 'Not authenticated. Please log in to use the chat.'}), 401
 
     try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+            
+        message = data.get('message', '').strip()
+        use_search = data.get('use_search', False)
+
+        if not message:
+            return jsonify({'error': 'Message is required'}), 400
+
+        print(f"Processing chat message: {message[:50]}...")
+
         # Get response from inference engine
         response = inference_engine.generate_response(message, use_search=use_search)
+        
+        if not response:
+            response = "I apologize, but I'm having trouble generating a response right now. Please try again."
 
         # Collect conversation data for learning
-        session_id = session.get('session_id', 'web_session')
-        learning_service.collect_conversation_data(message, response, session_id)
+        try:
+            session_id = session.get('session_id', f"web_session_{session.get('user_id', 'anonymous')}")
+            learning_service.collect_conversation_data(message, response, session_id)
+        except Exception as e:
+            print(f"Warning: Could not collect learning data: {e}")
 
         # Log usage
-        username = session.get('user_id')
-        db_manager.log_usage(username, 'web_chat', len(message.split()), len(response.split()))
+        try:
+            username = session.get('user_id')
+            if username:
+                db_manager.log_usage(username, 'web_chat', len(message.split()), len(response.split()))
+        except Exception as e:
+            print(f"Warning: Could not log usage: {e}")
 
         return jsonify({
             'response': response,
-            'timestamp': datetime.now().isoformat()
+            'timestamp': datetime.now().isoformat(),
+            'model': 'DieAI'
         })
+        
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Error in web chat: {e}")
+        return jsonify({
+            'error': 'I encountered an internal error. Please try again.',
+            'timestamp': datetime.now().isoformat()
+        }), 500
 
 if __name__ == '__main__':
     import argparse
