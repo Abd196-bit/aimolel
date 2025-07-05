@@ -43,20 +43,20 @@ class DieAIHandler(http.server.SimpleHTTPRequestHandler):
                 <div class="container">
                     <h1>DieAI Platform</h1>
                     <p>Welcome to DieAI - Your Custom AI Platform</p>
-                    
+
                     <div class="status">
                         ✅ System Status: Running Successfully!<br>
                         📊 Database: PostgreSQL Connected<br>
                         🔧 Migration: Completed<br>
                         🚀 Server: Python HTTP Server (Lightweight Mode)
                     </div>
-                    
+
                     <div class="nav">
                         <a href="/health">Health Check</a>
                         <a href="/api/models">API Models</a>
                         <a href="javascript:testChat()">Test Chat API</a>
                     </div>
-                    
+
                     <h2>Features</h2>
                     <ul class="feature-list">
                         <li>✅ Core Application Running</li>
@@ -67,7 +67,7 @@ class DieAIHandler(http.server.SimpleHTTPRequestHandler):
                         <li>⏳ AI Model Integration (Pending PyTorch Installation)</li>
                         <li>⏳ Search Integration (Pending Dependencies)</li>
                     </ul>
-                    
+
                     <div class="test-section">
                         <h2>API Test</h2>
                         <button onclick="testChat()">Test Chat API</button>
@@ -75,10 +75,10 @@ class DieAIHandler(http.server.SimpleHTTPRequestHandler):
                         <button onclick="testModels()">Test Models API</button>
                         <div id="result"></div>
                     </div>
-                    
+
                     <h2>Migration Status</h2>
                     <p>The DieAI application has been successfully migrated to Replit. Due to disk space constraints, some dependencies are temporarily unavailable, but the core functionality is running.</p>
-                    
+
                     <h3>Next Steps</h3>
                     <ul>
                         <li>Install Flask and related dependencies when disk space allows</li>
@@ -87,7 +87,7 @@ class DieAIHandler(http.server.SimpleHTTPRequestHandler):
                         <li>Restore search integration and rate limiting</li>
                     </ul>
                 </div>
-                
+
                 <script>
                 function testChat() {
                     fetch('/api/chat', {
@@ -107,7 +107,7 @@ class DieAIHandler(http.server.SimpleHTTPRequestHandler):
                             'Error: ' + error;
                     });
                 }
-                
+
                 function testHealth() {
                     fetch('/health')
                     .then(response => response.json())
@@ -120,7 +120,7 @@ class DieAIHandler(http.server.SimpleHTTPRequestHandler):
                             'Error: ' + error;
                     });
                 }
-                
+
                 function testModels() {
                     fetch('/api/models')
                     .then(response => response.json())
@@ -138,7 +138,7 @@ class DieAIHandler(http.server.SimpleHTTPRequestHandler):
             </html>
             """
             self.wfile.write(html_content.encode('utf-8'))
-            
+
         elif self.path == '/health':
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
@@ -154,7 +154,7 @@ class DieAIHandler(http.server.SimpleHTTPRequestHandler):
                 'migration_status': 'completed'
             }
             self.wfile.write(json.dumps(health_data, indent=2).encode('utf-8'))
-            
+
         elif self.path == '/api/models':
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
@@ -172,7 +172,7 @@ class DieAIHandler(http.server.SimpleHTTPRequestHandler):
                 }]
             }
             self.wfile.write(json.dumps(models_data, indent=2).encode('utf-8'))
-            
+
         else:
             super().do_GET()
 
@@ -180,16 +180,16 @@ class DieAIHandler(http.server.SimpleHTTPRequestHandler):
         if self.path == '/api/chat':
             content_length = int(self.headers['Content-Length'])
             post_data = self.rfile.read(content_length)
-            
+
             try:
                 data = json.loads(post_data.decode('utf-8'))
-                
+
                 if 'messages' not in data:
                     self.send_error(400, 'Messages required')
                     return
-                
+
                 last_message = data['messages'][-1]['content']
-                
+
                 response_data = {
                     'id': f'chat-{int(time.time())}',
                     'object': 'chat.completion',
@@ -209,13 +209,13 @@ class DieAIHandler(http.server.SimpleHTTPRequestHandler):
                         'total_tokens': len(last_message.split()) + 25
                     }
                 }
-                
+
                 self.send_response(200)
                 self.send_header('Content-type', 'application/json')
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 self.wfile.write(json.dumps(response_data, indent=2).encode('utf-8'))
-                
+
             except json.JSONDecodeError:
                 self.send_error(400, 'Invalid JSON')
             except Exception as e:
@@ -231,11 +231,11 @@ class DieAIHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 5002))
     print(f"Starting DieAI server on port {port}")
     print("Running in lightweight mode (no external dependencies)")
     print(f"Server accessible at http://0.0.0.0:{port}")
-    
+
     with socketserver.TCPServer(("0.0.0.0", port), DieAIHandler) as httpd:
         try:
             httpd.serve_forever()

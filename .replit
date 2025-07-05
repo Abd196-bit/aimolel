@@ -5,7 +5,7 @@ channel = "stable-24_05"
 packages = ["openssl", "postgresql"]
 
 [workflows]
-runButton = "Project"
+runButton = "DieAI Server (Port 5002)"
 
 [[workflows.workflow]]
 name = "Project"
@@ -54,6 +54,15 @@ author = "agent"
 task = "shell.exec"
 args = "gunicorn --bind 0.0.0.0:5000 --reuse-port --reload main:app"
 waitForPort = 5000
+
+[[workflows.workflow]]
+name = "DieAI Server (Port 5002)"
+author = 40760779
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python simple_server_final.py"
 
 [[ports]]
 localPort = 5000

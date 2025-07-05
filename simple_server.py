@@ -11,7 +11,7 @@ import os
 from datetime import datetime
 from urllib.parse import urlparse, parse_qs
 
-PORT = 5000
+PORT = 5002
 
 class DieAIHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):

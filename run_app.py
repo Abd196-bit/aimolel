@@ -19,7 +19,7 @@ if FLASK_AVAILABLE:
     # Flask application
     app = Flask(__name__)
     CORS(app)
-    
+
     @app.route('/')
     def index():
         return """
@@ -42,20 +42,20 @@ if FLASK_AVAILABLE:
             <div class="container">
                 <h1>🤖 DieAI Platform</h1>
                 <p>Welcome to DieAI - Your Custom AI Platform</p>
-                
+
                 <div class="status">
                     ✅ System Status: Running Successfully!<br>
                     🔧 Migration: Completed<br>
                     📊 Database: PostgreSQL Connected<br>
                     🚀 Server: Flask (Lightweight Mode)
                 </div>
-                
+
                 <div class="nav">
                     <a href="/health">Health Check</a>
                     <a href="/api/models">API Models</a>
                     <a href="/api/chat" onclick="testChat()">Test Chat</a>
                 </div>
-                
+
                 <h2>Features</h2>
                 <ul>
                     <li>✅ Core Application Running</li>
@@ -65,13 +65,13 @@ if FLASK_AVAILABLE:
                     <li>⏳ User Authentication (Coming Soon)</li>
                     <li>⏳ AI Model Integration (Coming Soon)</li>
                 </ul>
-                
+
                 <h2>API Test</h2>
                 <div id="chatTest">
                     <button onclick="testChat()">Test Chat API</button>
                     <div id="chatResult"></div>
                 </div>
-                
+
                 <script>
                 function testChat() {
                     fetch('/api/chat', {
@@ -96,7 +96,7 @@ if FLASK_AVAILABLE:
         </body>
         </html>
         """
-    
+
     @app.route('/health')
     def health():
         return jsonify({
@@ -107,7 +107,7 @@ if FLASK_AVAILABLE:
             'database': 'postgresql',
             'migration_status': 'completed'
         })
-    
+
     @app.route('/api/models')
     def models():
         return jsonify({
@@ -120,14 +120,14 @@ if FLASK_AVAILABLE:
                 'status': 'development'
             }]
         })
-    
+
     @app.route('/api/chat', methods=['POST'])
     def chat():
         try:
             data = request.get_json()
             if not data or 'messages' not in data:
                 return jsonify({'error': 'Messages required'}), 400
-            
+
             last_message = data['messages'][-1]['content']
             return jsonify({
                 'id': f'chat-{int(time.time())}',
@@ -150,9 +150,9 @@ if FLASK_AVAILABLE:
             })
         except Exception as e:
             return jsonify({'error': str(e)}), 500
-    
+
     if __name__ == '__main__':
-        port = int(os.environ.get('PORT', 5000))
+        port = int(os.environ.get('PORT', 5002))
         app.run(host='0.0.0.0', port=port, debug=True)
 
 else:
@@ -211,10 +211,10 @@ else:
                 super().do_GET()
 
     if __name__ == '__main__':
-        port = int(os.environ.get('PORT', 5000))
+        port = int(os.environ.get('PORT', 5002))
         print(f"Starting DieAI server on port {port}")
         print("Flask not available - using fallback HTTP server")
-        
+
         with socketserver.TCPServer(("", port), DieAIHandler) as httpd:
             print(f"Server running at http://0.0.0.0:{port}")
             httpd.serve_forever()
