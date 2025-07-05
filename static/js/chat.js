@@ -440,7 +440,7 @@ function submitFeedback(feedbackType, messageId, userMessage, aiResponse) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': \`Bearer ${localStorage.getItem('api_key')}\`
+            'Authorization': `Bearer ${localStorage.getItem('api_key')}`
         },
         body: JSON.stringify({
             conversation_id: messageId,
@@ -483,7 +483,7 @@ function submitFeedback(feedbackType, messageId, userMessage, aiResponse, correc
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': \`Bearer ${localStorage.getItem('api_key')}\`
+            'Authorization': `Bearer ${localStorage.getItem('api_key')}`
         },
         body: JSON.stringify(payload)
     })
@@ -505,7 +505,7 @@ function submitFeedback(feedbackType, messageId, userMessage, aiResponse, correc
 function showToast(message, type) {
     // Simple toast notification
     const toast = document.createElement('div');
-    toast.className = \`alert alert-\${type === 'success' ? 'success' : 'danger'} position-fixed\`;
+    toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} position-fixed`;
     toast.style.cssText = 'top: 20px; right: 20px; z-index: 1050; min-width: 300px;';
     toast.textContent = message;
 

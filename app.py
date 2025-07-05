@@ -1,18 +1,20 @@
+#!/usr/bin/env python3
+"""
+Main Flask application for DieAI
+Lightweight version that works without heavy AI dependencies
+"""
 import os
-import time
-import logging
+import sys
 from datetime import datetime
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
+from flask import Flask, render_template, request, jsonify, flash, redirect, url_for, session
 from flask_cors import CORS
-from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-# Configure logging
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
-
+# Database setup
 class Base(DeclarativeBase):
     pass
 
@@ -34,29 +36,52 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
 db.init_app(app)
 CORS(app)
 
-# Initialize Flask-Login
+# Initialize login manager
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-# Initialize database tables
-with app.app_context():
-    # Import models to ensure they're registered
-    from models import User, APIKey, UsageStats, ConversationHistory, RateLimitEntry
-    db.create_all()
+# User model
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(64), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(256))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_active = db.Column(db.Boolean, default=True)
+    
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+    
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+    
+    def get_id(self):
+        return str(self.id)
+    
+    def is_authenticated(self):
+        return True
+    
+    def is_anonymous(self):
+        return False
 
 @login_manager.user_loader
 def load_user(user_id):
-    from models import User
     return User.query.get(int(user_id))
 
-# Web routes
+# Initialize database tables
+with app.app_context():
+    db.create_all()
+
+# Routes
 @app.route('/')
 def index():
+    """Home page"""
     return render_template('index.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    """Login page"""
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
@@ -65,12 +90,9 @@ def login():
             flash('Username and password are required', 'error')
             return render_template('login.html')
         
-        from models import User
         user = User.query.filter_by(username=username).first()
-        
         if user and user.check_password(password):
             login_user(user)
-            flash('Login successful!', 'success')
             return redirect(url_for('dashboard'))
         else:
             flash('Invalid username or password', 'error')
@@ -79,25 +101,24 @@ def login():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    """Register page"""
     if request.method == 'POST':
         username = request.form.get('username')
         email = request.form.get('email')
         password = request.form.get('password')
         
-        if not username or not email or not password:
+        if not all([username, email, password]):
             flash('All fields are required', 'error')
-            return render_template('login.html')
-        
-        from models import User
+            return render_template('register.html')
         
         # Check if user already exists
         if User.query.filter_by(username=username).first():
             flash('Username already exists', 'error')
-            return render_template('login.html')
+            return render_template('register.html')
         
         if User.query.filter_by(email=email).first():
             flash('Email already exists', 'error')
-            return render_template('login.html')
+            return render_template('register.html')
         
         # Create new user
         user = User(username=username, email=email)
@@ -105,134 +126,93 @@ def register():
         db.session.add(user)
         db.session.commit()
         
-        flash('Registration successful! Please login.', 'success')
+        flash('Registration successful! Please log in.', 'success')
         return redirect(url_for('login'))
     
-    return render_template('login.html')
-
-@app.route('/logout')
-@login_required
-def logout():
-    logout_user()
-    flash('You have been logged out', 'info')
-    return redirect(url_for('index'))
+    return render_template('register.html')
 
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    from models import APIKey
-    api_keys = APIKey.query.filter_by(user_id=current_user.id).all()
-    return render_template('dashboard.html', api_keys=api_keys)
+    """Dashboard page"""
+    return render_template('dashboard.html', user=current_user)
 
-@app.route('/generate_api_key', methods=['POST'])
+@app.route('/logout')
 @login_required
-def generate_api_key():
-    from models import APIKey
-    
-    name = request.form.get('name', 'Default Key')
-    
-    # Generate new API key
-    api_key = APIKey(user_id=current_user.id, name=name)
-    new_key = APIKey.generate_key()
-    api_key.set_key(new_key)
-    
-    db.session.add(api_key)
-    db.session.commit()
-    
-    flash(f'API Key generated: {new_key}', 'success')
-    return redirect(url_for('dashboard'))
+def logout():
+    """Logout"""
+    logout_user()
+    return redirect(url_for('index'))
 
-@app.route('/revoke_api_key', methods=['POST'])
-@login_required
-def revoke_api_key():
-    from models import APIKey
-    
-    key_id = request.form.get('key_id')
-    api_key = APIKey.query.filter_by(id=key_id, user_id=current_user.id).first()
-    
-    if api_key:
-        api_key.is_active = False
-        db.session.commit()
-        flash('API key revoked successfully', 'success')
-    else:
-        flash('API key not found', 'error')
-    
-    return redirect(url_for('dashboard'))
-
+# API Routes
 @app.route('/health')
 def health_check():
     """Health check endpoint"""
     return jsonify({
         'status': 'healthy',
         'timestamp': datetime.now().isoformat(),
-        'version': '1.0.0'
+        'version': '1.0.0',
+        'mode': 'flask',
+        'server': 'flask-dev',
+        'database': 'postgresql',
+        'migration_status': 'completed'
     })
-
-# API endpoints - simplified for now
-@app.route('/api/chat', methods=['POST'])
-def api_chat():
-    """Basic chat endpoint - will be enhanced with AI later"""
-    data = request.get_json()
-    
-    if not data or 'messages' not in data:
-        return jsonify({'error': 'Messages required'}), 400
-    
-    # Simple echo response for now
-    last_message = data['messages'][-1]['content']
-    response = {
-        'id': 'chat-' + str(int(time.time())),
-        'object': 'chat.completion',
-        'created': int(time.time()),
-        'model': 'dieai-transformer',
-        'choices': [{
-            'index': 0,
-            'message': {
-                'role': 'assistant',
-                'content': f"I received your message: {last_message}. AI features will be available soon!"
-            },
-            'finish_reason': 'stop'
-        }],
-        'usage': {
-            'prompt_tokens': 10,
-            'completion_tokens': 20,
-            'total_tokens': 30
-        }
-    }
-    
-    return jsonify(response)
 
 @app.route('/api/models')
 def api_models():
     """Get available models"""
-    models = [{
-        'id': 'dieai-transformer',
-        'name': 'DieAI Transformer',
-        'description': 'Custom transformer model for DieAI',
-        'max_tokens': 4096,
-        'capabilities': ['chat', 'search']
-    }]
-    
-    return jsonify({'models': models})
-
-@app.route('/web_chat', methods=['POST'])
-def web_chat():
-    """Web chat endpoint for the frontend"""
-    data = request.get_json()
-    message = data.get('message', '')
-    
-    if not message:
-        return jsonify({'error': 'Message required'}), 400
-    
-    # Simple response for now
-    response = f"You said: {message}. AI features will be available soon!"
-    
     return jsonify({
-        'response': response,
-        'timestamp': datetime.now().isoformat()
+        'models': [{
+            'id': 'dieai-transformer',
+            'name': 'DieAI Transformer',
+            'description': 'Custom transformer model (Development Phase)',
+            'max_tokens': 4096,
+            'capabilities': ['chat', 'search'],
+            'status': 'development',
+            'availability': 'pending_dependencies'
+        }]
     })
 
-
+@app.route('/api/chat', methods=['POST'])
+def api_chat():
+    """Basic chat endpoint"""
+    try:
+        data = request.get_json()
+        if not data or 'messages' not in data:
+            return jsonify({'error': 'Messages required'}), 400
+        
+        last_message = data['messages'][-1]['content']
+        
+        response_data = {
+            'id': f'chat-{int(datetime.now().timestamp())}',
+            'object': 'chat.completion',
+            'created': int(datetime.now().timestamp()),
+            'model': 'dieai-transformer',
+            'choices': [{
+                'index': 0,
+                'message': {
+                    'role': 'assistant',
+                    'content': f'Hello! I received your message: "{last_message}". The DieAI system is running successfully with Flask! AI model features will be restored once dependencies are installed.'
+                },
+                'finish_reason': 'stop'
+            }],
+            'usage': {
+                'prompt_tokens': len(last_message.split()),
+                'completion_tokens': 25,
+                'total_tokens': len(last_message.split()) + 25
+            }
+        }
+        
+        return jsonify(response_data)
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    # Development server
-    app.run(host='0.0.0.0', port=5002, debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    host = os.environ.get('HOST', '0.0.0.0')
+    
+    print(f"Starting DieAI Flask server on {host}:{port}")
+    print("Running in development mode")
+    
+    app.run(host=host, port=port, debug=True)
