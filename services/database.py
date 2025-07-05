@@ -9,9 +9,90 @@ from contextlib import contextmanager
 logger = logging.getLogger(__name__)
 
 class DatabaseManager:
-    def __init__(self, db_path: str = "dieai.db"):
+    def __init__(self, db_path: str = "dieai.db", use_postgres: bool = False):
         self.db_path = db_path
+        self.use_postgres = use_postgres
         self.connection = None
+        
+        # Initialize PostgreSQL if enabled
+        if use_postgres:
+            self._init_postgres()
+        else:
+            self.initialize_database()
+    
+    def _init_postgres(self):
+        """Initialize PostgreSQL connection and tables"""
+        try:
+            import psycopg2
+            from psycopg2.extras import RealDictCursor
+            
+            # Get PostgreSQL connection from environment
+            database_url = os.getenv('DATABASE_URL')
+            if database_url:
+                self.pg_conn = psycopg2.connect(database_url, cursor_factory=RealDictCursor)
+                self._create_postgres_tables()
+                logger.info("PostgreSQL database connected successfully")
+            else:
+                logger.warning("No DATABASE_URL found, falling back to SQLite")
+                self.use_postgres = False
+                self.initialize_database()
+        except ImportError:
+            logger.warning("psycopg2 not available, falling back to SQLite")
+            self.use_postgres = False
+            self.initialize_database()
+        except Exception as e:
+            logger.error(f"PostgreSQL connection failed: {e}, falling back to SQLite")
+            self.use_postgres = False
+            self.initialize_database()
+    
+    def _create_postgres_tables(self):
+        """Create PostgreSQL tables"""
+        with self.pg_conn.cursor() as cursor:
+            # Users table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS users (
+                    id SERIAL PRIMARY KEY,
+                    username VARCHAR(80) UNIQUE NOT NULL,
+                    password_hash VARCHAR(255) NOT NULL,
+                    password_salt VARCHAR(32) NOT NULL,
+                    email VARCHAR(120) UNIQUE NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    is_active BOOLEAN DEFAULT TRUE,
+                    last_login TIMESTAMP
+                )
+            ''')
+            
+            # API keys table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS api_keys (
+                    id SERIAL PRIMARY KEY,
+                    api_key VARCHAR(255) UNIQUE NOT NULL,
+                    username VARCHAR(80) NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    is_active BOOLEAN DEFAULT TRUE,
+                    usage_count INTEGER DEFAULT 0,
+                    last_used TIMESTAMP,
+                    FOREIGN KEY (username) REFERENCES users (username)
+                )
+            ''')
+            
+            # API interactions table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS api_interactions (
+                    id SERIAL PRIMARY KEY,
+                    username VARCHAR(80) NOT NULL,
+                    api_key VARCHAR(255),
+                    endpoint VARCHAR(100) NOT NULL,
+                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    request_tokens INTEGER DEFAULT 0,
+                    response_tokens INTEGER DEFAULT 0,
+                    success BOOLEAN DEFAULT TRUE,
+                    FOREIGN KEY (username) REFERENCES users (username)
+                )
+            ''')
+            
+            self.pg_conn.commit()
+            logger.info("PostgreSQL tables created successfully")
         
     def initialize_database(self):
         """Initialize database with required tables"""

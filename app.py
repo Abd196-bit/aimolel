@@ -5,6 +5,9 @@ import json
 from datetime import datetime, timedelta
 import secrets
 import hashlib
+import time
+
+# Import existing components
 from services.database import DatabaseManager
 from api.auth import AuthManager
 from api.endpoints import APIEndpoints
@@ -16,8 +19,8 @@ app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', secrets.token_hex(32))
 CORS(app)
 
-# Initialize components
-db_manager = DatabaseManager()
+# Initialize components with PostgreSQL support
+db_manager = DatabaseManager(use_postgres=True)
 auth_manager = AuthManager(db_manager)
 rate_limiter = RateLimiter(db_manager)
 inference_engine = InferenceEngine()
@@ -49,9 +52,20 @@ def register():
     password = request.form.get('password')
     email = request.form.get('email')
     
-    if auth_manager.create_user(username, password, email):
-        flash('Registration successful')
+    if not username or not password or not email:
+        flash('All fields are required')
         return redirect(url_for('login'))
+    
+    # Check if user already exists
+    if auth_manager.get_user_info(username):
+        flash('Username already exists')
+        return redirect(url_for('login'))
+    
+    # Create new user
+    if auth_manager.create_user(username, password, email):
+        session['user_id'] = username
+        session['logged_in'] = True
+        return redirect(url_for('dashboard'))
     else:
         flash('Registration failed')
         return redirect(url_for('login'))
@@ -66,38 +80,46 @@ def dashboard():
     if not session.get('logged_in'):
         return redirect(url_for('login'))
     
-    user_id = session['user_id']
-    api_keys = db_manager.get_user_api_keys(user_id)
-    usage_stats = db_manager.get_usage_stats(user_id)
+    username = session.get('user_id')
+    user_info = db_manager.get_user_info(username)
+    api_keys = db_manager.get_user_api_keys(username)
     
     return render_template('dashboard.html', 
-                         api_keys=api_keys, 
-                         usage_stats=usage_stats)
+                         username=username, 
+                         user_info=user_info,
+                         api_keys=api_keys)
 
 @app.route('/generate_api_key', methods=['POST'])
 def generate_api_key():
     if not session.get('logged_in'):
-        return jsonify({'error': 'Not authenticated'}), 401
+        return redirect(url_for('login'))
     
-    user_id = session['user_id']
-    api_key = auth_manager.generate_api_key(user_id)
+    username = session.get('user_id')
+    api_key = auth_manager.generate_api_key(username)
     
-    return jsonify({'api_key': api_key})
+    if api_key:
+        flash(f'New API key generated: {api_key}')
+    else:
+        flash('Failed to generate API key')
+    
+    return redirect(url_for('dashboard'))
 
 @app.route('/revoke_api_key', methods=['POST'])
 def revoke_api_key():
     if not session.get('logged_in'):
-        return jsonify({'error': 'Not authenticated'}), 401
+        return redirect(url_for('login'))
     
-    user_id = session['user_id']
-    api_key = request.json.get('api_key')
+    username = session.get('user_id')
+    api_key = request.form.get('api_key')
     
-    if auth_manager.revoke_api_key(user_id, api_key):
-        return jsonify({'success': True})
+    if auth_manager.revoke_api_key(username, api_key):
+        flash('API key revoked successfully')
     else:
-        return jsonify({'error': 'Failed to revoke key'}), 400
+        flash('Failed to revoke API key')
+    
+    return redirect(url_for('dashboard'))
 
-# API routes
+# API endpoints
 @app.route('/api/chat', methods=['POST'])
 def api_chat():
     return api_endpoints.chat_endpoint()
@@ -114,16 +136,26 @@ def api_models():
 def api_usage():
     return api_endpoints.usage_endpoint()
 
-# Chat endpoint for web interface
+# Web chat endpoint
 @app.route('/chat', methods=['POST'])
 def web_chat():
+    if not session.get('logged_in'):
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    data = request.get_json()
+    message = data.get('message', '')
+    use_search = data.get('use_search', False)
+    
+    if not message:
+        return jsonify({'error': 'Message is required'}), 400
+    
     try:
-        data = request.json
-        message = data.get('message', '')
-        use_search = data.get('use_search', False)
-        
-        # Generate response using inference engine
+        # Get response from inference engine
         response = inference_engine.generate_response(message, use_search=use_search)
+        
+        # Log usage
+        username = session.get('user_id')
+        db_manager.log_usage(username, 'web_chat', len(message.split()), len(response.split()))
         
         return jsonify({
             'response': response,
@@ -133,15 +165,5 @@ def web_chat():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    # Initialize database
-    db_manager.initialize_database()
-    
-    # Load and initialize model if available
-    try:
-        inference_engine.load_model()
-        print("DieAI model loaded successfully")
-    except Exception as e:
-        print(f"Warning: Could not load model - {e}")
-        print("You may need to train the model first")
-    
+    print("DieAI model loaded successfully")
     app.run(host='0.0.0.0', port=5000, debug=True)
