@@ -4,7 +4,7 @@ modules = ["python-3.11"]
 channel = "stable-24_05"
 
 [workflows]
-runButton = "Project"
+runButton = "DieAI Learning Server"
 
 [[workflows.workflow]]
 name = "Project"
@@ -23,6 +23,23 @@ author = "agent"
 task = "shell.exec"
 args = "pip install flask flask-cors torch transformers requests PyJWT && python app.py"
 waitForPort = 5000
+
+[[workflows.workflow]]
+name = "DieAI Learning Server"
+author = 44635705
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pip install flask flask-cors torch transformers requests PyJWT"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -c \"from services.database import DatabaseManager; db = DatabaseManager(); db.initialize_database(); print('Database initialized')\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python app.py --port=5000 --host=0.0.0.0"
 
 [[ports]]
 localPort = 5000

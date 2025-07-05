@@ -34,6 +34,10 @@ class InferenceEngine:
         # Context management
         self.conversation_history = []
         self.max_history_length = 5
+        
+        # Learning and basic English
+        self.learning_service = None
+        self.basic_english = self._load_basic_english()
     
     def load_model(self):
         """Load the trained model and tokenizer"""
@@ -317,15 +321,46 @@ class InferenceEngine:
         
         return responses
     
+    def _load_basic_english(self) -> Dict:
+        """Load basic English knowledge base"""
+        try:
+            import os
+            basic_english_path = "data/basic_english.json"
+            if os.path.exists(basic_english_path):
+                with open(basic_english_path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+        except Exception as e:
+            logger.error(f"Error loading basic English: {e}")
+        
+        return {
+            "greetings": {},
+            "basic_responses": {},
+            "basic_questions": {},
+            "encouragement": {},
+            "basic_facts": {}
+        }
+    
+    def set_learning_service(self, learning_service):
+        """Set the learning service for this engine"""
+        self.learning_service = learning_service
+    
     def _generate_fallback_response(self, prompt: str, use_search: bool = False, 
                                    context: Optional[str] = None) -> str:
         """Generate a fallback response when model is not loaded"""
         import random
         
         # Simple rule-based responses for common patterns
-        prompt_lower = prompt.lower()
+        prompt_lower = prompt.lower().strip()
+        
+        # Check basic English knowledge base first
+        response = self._check_basic_english_response(prompt_lower)
+        if response:
+            return response
         
         if any(greeting in prompt_lower for greeting in ['hello', 'hi', 'hey']):
+            greetings = list(self.basic_english.get('greetings', {}).values())
+            if greetings:
+                return random.choice(greetings)
             return "Hello! I'm DieAI, your AI assistant. How can I help you today?"
         
         if any(word in prompt_lower for word in ['help', 'assist', 'support']):
@@ -365,3 +400,26 @@ class InferenceEngine:
         ]
         
         return random.choice(default_responses)
+    
+    def _check_basic_english_response(self, prompt_lower: str) -> Optional[str]:
+        """Check if prompt matches basic English knowledge"""
+        import difflib
+        
+        # Check all categories in basic English
+        for category, responses in self.basic_english.items():
+            for key, response in responses.items():
+                # Exact match
+                if prompt_lower == key.lower():
+                    return response
+                
+                # Fuzzy match for similar phrases
+                similarity = difflib.SequenceMatcher(None, prompt_lower, key.lower()).ratio()
+                if similarity > 0.8:
+                    return response
+                
+                # Check if key words are in prompt
+                key_words = key.lower().split()
+                if len(key_words) > 1 and all(word in prompt_lower for word in key_words):
+                    return response
+        
+        return None

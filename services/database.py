@@ -181,6 +181,34 @@ class DatabaseManager:
                     )
                 ''')
                 
+                # User feedback table for learning
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS user_feedback (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        conversation_id INTEGER,
+                        user_message TEXT NOT NULL,
+                        ai_response TEXT NOT NULL,
+                        feedback_type TEXT NOT NULL, -- 'thumbs_up', 'thumbs_down', 'correction'
+                        correction_text TEXT,
+                        timestamp TEXT NOT NULL,
+                        api_key TEXT,
+                        FOREIGN KEY (conversation_id) REFERENCES conversations (id)
+                    )
+                ''')
+                
+                # Learning data table
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS learning_data (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        input_text TEXT NOT NULL,
+                        target_text TEXT NOT NULL,
+                        source TEXT NOT NULL, -- 'feedback', 'correction', 'conversation'
+                        quality_score REAL DEFAULT 1.0,
+                        timestamp TEXT NOT NULL,
+                        used_for_training BOOLEAN DEFAULT 0
+                    )
+                ''')
+                
                 conn.commit()
                 logger.info("Database initialized successfully")
                 
@@ -565,3 +593,93 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Error getting conversation history: {e}")
             return []
+    
+    # Feedback and learning methods
+    def store_feedback(self, conversation_id: int, user_message: str, ai_response: str,
+                      feedback_type: str, correction_text: str = None, api_key: str = None) -> bool:
+        """Store user feedback for learning"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    INSERT INTO user_feedback 
+                    (conversation_id, user_message, ai_response, feedback_type, correction_text, timestamp, api_key)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    conversation_id,
+                    user_message,
+                    ai_response,
+                    feedback_type,
+                    correction_text,
+                    datetime.now().isoformat(),
+                    api_key
+                ))
+                conn.commit()
+                
+                # Add to learning data if it's a correction
+                if feedback_type == 'correction' and correction_text:
+                    self.add_learning_data(user_message, correction_text, 'correction', 1.5)
+                elif feedback_type == 'thumbs_up':
+                    self.add_learning_data(user_message, ai_response, 'feedback', 1.2)
+                
+                return True
+        except Exception as e:
+            logger.error(f"Error storing feedback: {e}")
+            return False
+    
+    def add_learning_data(self, input_text: str, target_text: str, source: str, quality_score: float = 1.0) -> bool:
+        """Add data for future training"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    INSERT INTO learning_data 
+                    (input_text, target_text, source, quality_score, timestamp, used_for_training)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ''', (
+                    input_text,
+                    target_text,
+                    source,
+                    quality_score,
+                    datetime.now().isoformat(),
+                    False
+                ))
+                conn.commit()
+                return True
+        except Exception as e:
+            logger.error(f"Error adding learning data: {e}")
+            return False
+    
+    def get_learning_data(self, limit: int = 1000, min_quality: float = 1.0) -> List[Dict]:
+        """Get learning data for training"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    SELECT * FROM learning_data 
+                    WHERE quality_score >= ? AND used_for_training = 0
+                    ORDER BY quality_score DESC, timestamp DESC
+                    LIMIT ?
+                ''', (min_quality, limit))
+                rows = cursor.fetchall()
+                return [dict(row) for row in rows]
+        except Exception as e:
+            logger.error(f"Error getting learning data: {e}")
+            return []
+    
+    def mark_data_used_for_training(self, data_ids: List[int]) -> bool:
+        """Mark learning data as used for training"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                placeholders = ','.join(['?' for _ in data_ids])
+                cursor.execute(f'''
+                    UPDATE learning_data 
+                    SET used_for_training = 1 
+                    WHERE id IN ({placeholders})
+                ''', data_ids)
+                conn.commit()
+                return True
+        except Exception as e:
+            logger.error(f"Error marking data as used: {e}")
+            return False
