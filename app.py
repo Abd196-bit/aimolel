@@ -176,5 +176,38 @@ def web_chat():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
+    import argparse
+    import socket
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--port', type=int, default=5000, help='Port to run the server on')
+    parser.add_argument('--host', type=str, default='0.0.0.0', help='Host to bind the server to')
+    args = parser.parse_args()
+    
+    # Find an available port if the default is in use
+    def find_free_port(start_port, host='0.0.0.0'):
+        for port in range(start_port, start_port + 10):
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                    s.bind((host, port))
+                    return port
+            except OSError:
+                continue
+        return None
+    
+    port = find_free_port(args.port, args.host)
+    if port is None:
+        print(f"Could not find available port starting from {args.port}")
+        port = args.port
+    
     print("DieAI model loaded successfully")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    print(f"Starting server on {args.host}:{port}")
+    
+    try:
+        app.run(host=args.host, port=port, debug=True)
+    except OSError as e:
+        if "Address already in use" in str(e):
+            print(f"Port {port} is still in use. Trying port {port + 1}")
+            app.run(host=args.host, port=port + 1, debug=True)
+        else:
+            raise
