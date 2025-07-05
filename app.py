@@ -5,6 +5,7 @@ Lightweight version that works without heavy AI dependencies
 """
 import os
 import sys
+import logging
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify, flash, redirect, url_for, session
 from flask_cors import CORS
@@ -13,6 +14,10 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Database setup
 class Base(DeclarativeBase):
@@ -175,13 +180,25 @@ def api_models():
 
 @app.route('/api/chat', methods=['POST'])
 def api_chat():
-    """Basic chat endpoint"""
+    """AI Chat endpoint with web search capabilities"""
     try:
         data = request.get_json()
         if not data or 'messages' not in data:
             return jsonify({'error': 'Messages required'}), 400
         
         last_message = data['messages'][-1]['content']
+        use_search = data.get('use_search', True)
+        
+        # Initialize AI brain
+        from services.ai_brain import DieAIBrain
+        ai_brain = DieAIBrain()
+        
+        # Get AI response with web search
+        ai_response = ai_brain.process_query(last_message, use_search=use_search)
+        
+        # Calculate token usage (approximate)
+        prompt_tokens = len(last_message.split())
+        completion_tokens = len(ai_response.split())
         
         response_data = {
             'id': f'chat-{int(datetime.now().timestamp())}',
@@ -192,21 +209,22 @@ def api_chat():
                 'index': 0,
                 'message': {
                     'role': 'assistant',
-                    'content': f'Hello! I received your message: "{last_message}". The DieAI system is running successfully with Flask! AI model features will be restored once dependencies are installed.'
+                    'content': ai_response
                 },
                 'finish_reason': 'stop'
             }],
             'usage': {
-                'prompt_tokens': len(last_message.split()),
-                'completion_tokens': 25,
-                'total_tokens': len(last_message.split()) + 25
+                'prompt_tokens': prompt_tokens,
+                'completion_tokens': completion_tokens,
+                'total_tokens': prompt_tokens + completion_tokens
             }
         }
         
         return jsonify(response_data)
     
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Chat API error: {e}")
+        return jsonify({'error': 'An error occurred processing your request'}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))

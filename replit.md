@@ -141,7 +141,9 @@ Preferred communication style: Simple, everyday language.
 - **Web Interface**: Clean, responsive design with status dashboard
 - **Health Check API**: Provides system status and diagnostics  
 - **Models API**: Lists available AI models and capabilities
-- **Chat API**: Basic chat endpoint with JSON response structure
+- **Chat API**: Intelligent chat endpoint with web search integration
+- **Web Search**: Multi-engine search (DuckDuckGo, Bing, Google, Wikipedia)
+- **AI Brain**: Intelligent query analysis and response synthesis
 - **CORS Support**: Cross-origin requests enabled for API access
 - **Error Handling**: Proper HTTP status codes and error responses
 
